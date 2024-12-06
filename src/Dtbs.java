@@ -43,7 +43,18 @@ public class Dtbs {
     }
 
     static void remove_from(String[][] table, String id) {
-
+        if (row_index_of(id, table, 0) == -1) {
+            return;
+        }
+        String[][] new_table = new String[table.length-1][table[0].length];
+        int offset = 0;
+        for (int i = 0; i < new_table.length; i++) {
+            if (table[i][0].equals(id) && offset == 0) { 
+                offset++; 
+            }
+            new_table[i] = table[i+offset];
+        }
+        overwrite(table, new_table);
     }
 
     static void overwrite(String[][] old_table, String[][] new_table) {

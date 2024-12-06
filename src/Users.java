@@ -1,4 +1,9 @@
 public class Users {
+    final static String[] column_names = {
+        "[id]  [username]  [password]  [role level] \n",
+        "[date & time]  [username]  [action] \n"
+    };
+
     static String current_user = null;
     static int current_level = 0;
 
@@ -49,11 +54,10 @@ public class Users {
                 if (Dtbs.row_index_of(input_name, Dtbs.accounts, 1) == -1) {
                     Dtbs.add_to(Dtbs.accounts, new String[]{"id",input_name,input_pass,"0"});
                     Main.show_message("Account Created");
-                    sign_in_menu();
                 } else {
                     Main.show_message("Username Already Used");
-                    sign_in_menu();
                 }
+                sign_in_menu();
             break;
 
             default:
@@ -64,31 +68,23 @@ public class Users {
     static void main_menu() {
         String[] options = {
             "Log Out", 
-            "Record Sales", 
-            "Inventory",
+            "Products",
             "Reports",
             "Users"
         };
         String menu_input = Main.get_choice(Main.MAIN_TITLE, null, options);
-        switch (menu_input) {
-            case "1":
-                sign_in_menu();
-            break;
-
-            case "2":
-            break;
-
-            case "3":
-            break;
-
-            case "4":
-            break;
-
-            case "5":
-            break;
-
-            default:
-            
+        if (menu_input.equals("1")) {
+            sign_in_menu();
+        } else if (menu_input.equals("2") && current_level >= 1) { 
+            Prdct.products_menu(options[1]);  
+        } else if (menu_input.equals("3") && current_level >= 2) { 
+            Prdct.reports_menu(options[2]);
+        } else if (menu_input.equals("4") && current_level == 3) { 
+           users_menu(options[3]);
         }
+    }
+
+    static void users_menu(String title) {
+
     }
 }
