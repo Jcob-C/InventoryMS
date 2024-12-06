@@ -18,7 +18,7 @@ public class Main {
         System.exit(0);
     }
 
-    static String string_of(String[][] table, String filter_type, String s_filter, Integer i_filter) {
+    static String string_of(String[][] table, int filter_column, String s_filter, Integer i_filter) {
         String output = "";
 
         return output;
@@ -36,7 +36,7 @@ public class Main {
             screen += "\n" + message; 
         }
         for (int i = 0; i < options.length; i++) {
-            screen += "\n"+(i+1)+OPTION_CONNECTOR+options[i];
+            screen += "\n" + (i+1) + OPTION_CONNECTOR + options[i];
         }
         screen += "\n\nType Here :";
         print(screen);
@@ -45,15 +45,26 @@ public class Main {
 
     static String get_input(String title, String message) {
         print(
-            TITLE_FRAME + title + TITLE_FRAME + "\n\n" +
-            message + "\n\n" +
+            TITLE_FRAME + title + TITLE_FRAME + 
+            "\n\n" +
+            message + 
+            "\n\n" +
             "Type Here :"
         );
         return scanner.next();
     }
 
     static void show_message(String message) {
-
+        print(
+            TITLE_FRAME + "MESSAGE" + TITLE_FRAME + 
+            "\n\n" +
+            message + 
+            "\n\n" +
+            "1" + OPTION_CONNECTOR + "OK" + 
+            "\n\n" +
+            "Type Here :"
+        );
+        scanner.next();
     }
 
     static boolean is_number(String string) {
