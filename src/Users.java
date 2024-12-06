@@ -1,7 +1,7 @@
 public class Users {
     final static String[] column_names = {
-        "[id]  [username]  [password]  [role level] \n",
-        "[date & time]  [username]  [action] \n"
+        "[ID]  [USERNAME]  [PASSWORD]  [ROLE LEVEL] \n",
+        "[DATE & TIME]  [USERNAME]  [ACTION] \n"
     };
 
     static String current_user = null;
@@ -81,6 +81,8 @@ public class Users {
             Prdct.reports_menu(options[2]);
         } else if (menu_input.equals("4") && current_level == 3) { 
            users_menu(options[3]);
+        } else {
+            main_menu();
         }
     }
 

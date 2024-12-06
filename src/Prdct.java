@@ -21,13 +21,13 @@ public class Prdct {
         };
         switch(Main.get_choice(title.toUpperCase(), column_names[0]+products_string(), options)) {
             case "1": Users.main_menu(); break;
-            case "2": Users.main_menu(); break;
-            case "3": Users.main_menu(); break;
-            case "4": Users.main_menu(); break;
+            case "2":  break;
+            case "3":  break;
+            case "4":  break;
             default: products_menu(title);
         }
     }
-
+    
     static void reports_menu(String title) {
         
     }
