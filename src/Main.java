@@ -10,8 +10,8 @@ public class Main {
 
     public static void main(String[] args) {
         Dtbs.add_to(Dtbs.accounts, new String[]{"id","admin","pass","4"});
-        Dtbs.add_to(Dtbs.products, new String[]{"id","admin","pass","4"});
-        Dtbs.add_to(Dtbs.products, new String[]{"id","admin","pass","4"});
+        Dtbs.add_to(Dtbs.products, new String[]{"id","Apple","Fruit","8"});
+        Dtbs.add_to(Dtbs.products, new String[]{"id","Zebra","Hayop","1"});
         Users.sign_in_menu();
     }
 

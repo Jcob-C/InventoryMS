@@ -24,14 +24,12 @@ public class Users {
                     options[1].toUpperCase(), 
                     "Enter Username"
                 );
-                int name_index = Dtbs.row_index_of(input_name, Dtbs.accounts, 1);
-
                 input_pass = Main.get_input(
                     options[1].toUpperCase(), 
                     "Enter Password"
                 );
+                int name_index = Dtbs.row_index_of(input_name, Dtbs.accounts, 1);
                 int pass_index = Dtbs.row_index_of(input_pass, Dtbs.accounts, 2);
-
                 if (name_index != -1 && pass_index != -1) {
                     current_user = input_name;
                     current_level = Integer.parseInt(Dtbs.accounts[name_index][3]);
@@ -76,9 +74,9 @@ public class Users {
         if (menu_input.equals("1")) {
             sign_in_menu();
         } else if (menu_input.equals("2") && current_level >= 1) { 
-            Prdct.products_menu(options[1]);  
+            Prdct.products_menu();  
         } else if (menu_input.equals("3") && current_level >= 2) { 
-            Prdct.reports_menu(options[2]);
+            Prdct.reports_menu();
         } else if (menu_input.equals("4") && current_level == 3) { 
            users_menu(options[3]);
         } else {
