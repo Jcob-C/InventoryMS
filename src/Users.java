@@ -3,6 +3,7 @@ public class Users {
     static int current_level = 0;
 
     static void sign_in_menu() {
+        String input_name, input_pass;
         String[] options = {
             "Exit", 
             "Log In", 
@@ -14,13 +15,13 @@ public class Users {
             break;
 
             case "2":
-                String input_name = Main.get_input(
+                input_name = Main.get_input(
                     options[1].toUpperCase(), 
                     "Enter Username"
                 );
                 int name_index = Dtbs.row_index_of(input_name, Dtbs.accounts, 1);
 
-                String input_pass = Main.get_input(
+                input_pass = Main.get_input(
                     options[1].toUpperCase(), 
                     "Enter Password"
                 );
@@ -37,7 +38,22 @@ public class Users {
             break;
             
             case "3":
-
+                input_name = Main.get_input(
+                    options[1].toUpperCase(), 
+                    "Enter Username"
+                );
+                input_pass = Main.get_input(
+                    options[1].toUpperCase(), 
+                    "Enter Password"
+                );
+                if (Dtbs.row_index_of(input_name, Dtbs.accounts, 1) == -1) {
+                    Dtbs.add_to(Dtbs.accounts, new String[]{"id",input_name,input_pass,"0"});
+                    Main.show_message("Account Created");
+                    sign_in_menu();
+                } else {
+                    Main.show_message("Username Already Used");
+                    sign_in_menu();
+                }
             break;
 
             default:
@@ -60,6 +76,7 @@ public class Users {
             break;
 
             case "2":
+                
             break;
 
             case "3":

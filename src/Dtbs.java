@@ -8,6 +8,8 @@ public class Dtbs {
     static String[][] products = new String[1][4]; // id, name, type, stock
     static String[][] sales = new String[1][4]; // id, today, week, month
     static String[][] sales_history = new String[1][31]; // id, 1-30
+    
+    static String saved_date = null;
 
     // if table has an id column, put "id" for a generated id
     static void add_to(String[][] table, String[] inputs) {
