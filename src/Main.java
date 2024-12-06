@@ -10,6 +10,7 @@ public class Main {
 
     public static void main(String[] args) {
         Dtbs.add_to(Dtbs.accounts, new String[]{"id","admin","pass","4"});
+        print("YOUUUU");
         Users.sign_in_menu();
     }
 
