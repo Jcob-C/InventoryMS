@@ -24,7 +24,7 @@ public class Main {
         String output = "";
         for (String[] row : table) {
             if (filter_column == null ||
-            filter_column != null && row[filter_column].equalsIgnoreCase(filter)) {
+            filter_column != null && row[filter_column].toLowerCase().contains(filter.toLowerCase())) {
                 output += "\n";
                 for (String x : row) {
                     output += "[" + x + "]  ";
