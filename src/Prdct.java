@@ -23,7 +23,7 @@ public class Prdct {
             case "1": Users.main_menu(); break;
             case "2": record_sales_menu(); break;
             case "3": filter_sort_menu(); break;
-            case "4": break;
+            case "4": manage_menu(); break;
             default: products_menu();
         }
     } 
@@ -116,23 +116,17 @@ public class Prdct {
         };
         String menu_input = Main.get_choice("FILTER BY?", column_names[0]+products_string(), filter_options);
         switch (menu_input) {
-            case "1":
-                filter_sort_menu();
-            break;
-
+            case "1": filter_sort_menu(); break;
             case "2": case "3": case "4":
                 int int_menu_input = Integer.parseInt(menu_input);
                 filter_word = Main.get_input("FILTER BY "+filter_options[int_menu_input-1], "Enter The Keyword");
                 filter_column = int_menu_input-2;
             break;
-
             case "5":
                 filter_word = null;
                 filter_column = null;
             break;
-
-            default:
-                filter_menu();
+            default:filter_menu();
         }
         products_menu();
     }
@@ -148,27 +142,23 @@ public class Prdct {
             "Descending"
         };
         String menu_input = Main.get_choice("SORT BY?", column_names[0]+products_string(), sort_options);
+        int int_menu_input = Integer.parseInt(menu_input);
         switch (menu_input) {
-            case "1":
-                filter_sort_menu();
-            break;
-
+            case "1": filter_sort_menu(); break;
             case "2": case "3":
-                int int_menu_input = Integer.parseInt(menu_input);
                 sort_column = int_menu_input-2;
                 number_column = menu_input.equals("2");
+
                 menu_input = Main.get_choice("SORT BY "+sort_options[int_menu_input-1], column_names[0]+products_string(), order_options);
                 ascending = !menu_input.equals("2");
             break;
-
-            default:
-                filter_menu();
+            default: filter_menu();
         }
         products_menu();
     }
 
     static void manage_menu() {
-        
+
     }
 
     static void reports_menu() {
