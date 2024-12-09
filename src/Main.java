@@ -2,7 +2,6 @@ import java.util.Scanner;
 
 public class Main {
     final static String MAIN_TITLE = "INVENTORY MANAGEMENT SYSTEM";
-
     final static String SCREENS_PRINT_GAP = "\n\n\n\n\n";
     final static String TITLE_FRAME = "}______{";
     final static String OPTION_CONNECTOR = "-<";
@@ -22,17 +21,16 @@ public class Main {
 
     static String string_of(String[][] table, Integer filter_column, String filter) {
         String output = "";
-        for (String[] row : table) {
-            if (filter_column == null ||
-            filter_column != null && row[filter_column].toLowerCase().contains(filter.toLowerCase())) {
+        for (int i = 0; i < table.length; i++) {
+            if (i == 0 || filter_column == null || 
+            filter_column != null && table[i][filter_column].toLowerCase().contains(filter.toLowerCase())) {
                 output += "\n";
-                for (String x : row) {
+                for (String x : table[i]) {
                     output += "[" + x + "]  ";
                 }
             }
         }
-        output += "\n";
-        return output;
+        return output + "\n";
     }
 
     static String[][] sorted(String[][] table, int column, boolean ascending, boolean number_column) {
@@ -47,7 +45,7 @@ public class Main {
         String[] holder;
         while(unsorted) {
             unsorted = false;
-            for (i = 0; i < table.length-1; i++) {
+            for (i = 1; i < table.length-1; i++) {
                 if (ascending && !number_column && copy_of_table[i][column].compareToIgnoreCase(copy_of_table[i+1][column]) > 0 ||
                 !ascending && !number_column && copy_of_table[i][column].compareToIgnoreCase(copy_of_table[i+1][column]) < 0 ||
                 ascending && number_column && Integer.parseInt(copy_of_table[i][column]) > Integer.parseInt(copy_of_table[i+1][column]) ||
@@ -65,7 +63,7 @@ public class Main {
     static String get_choice(String title, String message, String[] options) {
         String screen = TITLE_FRAME + title + TITLE_FRAME + "\n";
         if (message != null) { 
-            screen += "\n" + message; 
+            screen += message; 
         }
         for (int i = 0; i < options.length; i++) {
             screen += "\n" + (i+1) + OPTION_CONNECTOR + options[i];

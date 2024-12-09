@@ -1,33 +1,15 @@
 public class Users {
-    final static String[] column_names = {
-        "[ID]  [USERNAME]  [PASSWORD]  [ROLE LEVEL] \n",
-        "[DATE & TIME]  [USERNAME]  [ACTION] \n"
-    };
-
     static String current_user = null;
     static int current_level = 0;
 
     static void sign_in_menu() {
         String input_name, input_pass;
-        String[] options = {
-            "Exit", 
-            "Log In", 
-            "Sign Up"
-        };
+        String[] options = {"Exit", "Log In", "Sign Up"};
         switch (Main.get_choice(Main.MAIN_TITLE,null,options)) {
-            case "1":
-                Main.exit_program();
-            break;
-
+            case "1": Main.exit_program(); break;
             case "2":
-                input_name = Main.get_input(
-                    options[1].toUpperCase(), 
-                    "Enter Username"
-                );
-                input_pass = Main.get_input(
-                    options[1].toUpperCase(), 
-                    "Enter Password"
-                );
+                input_name = Main.get_input("LOG IN","Enter Username");
+                input_pass = Main.get_input("LOG IN", "Enter Password");
                 int name_index = Dtbs.row_index_of(input_name, Dtbs.accounts, 1);
                 int pass_index = Dtbs.row_index_of(input_pass, Dtbs.accounts, 2);
                 if (name_index != -1 && pass_index != -1) {
@@ -39,16 +21,9 @@ public class Users {
                     sign_in_menu();
                 }
             break;
-            
             case "3":
-                input_name = Main.get_input(
-                    options[1].toUpperCase(), 
-                    "Enter Username"
-                );
-                input_pass = Main.get_input(
-                    options[1].toUpperCase(), 
-                    "Enter Password"
-                );
+                input_name = Main.get_input("SIGN UP","Enter Username");
+                input_pass = Main.get_input("SIGN UP", "Enter Password");
                 if (Dtbs.row_index_of(input_name, Dtbs.accounts, 1) == -1) {
                     Dtbs.add_to(Dtbs.accounts, new String[]{"id",input_name,input_pass,"0"});
                     Main.show_message("Account Created");
@@ -57,19 +32,12 @@ public class Users {
                 }
                 sign_in_menu();
             break;
-
-            default:
-                sign_in_menu();
+            default: sign_in_menu();
         }
     }
 
     static void main_menu() {
-        String[] options = {
-            "Log Out", 
-            "Products",
-            "Reports",
-            "Users"
-        };
+        String[] options = {"Log Out", "Products", "Reports", "Users"};
         String menu_input = Main.get_choice(Main.MAIN_TITLE, null, options);
         if (menu_input.equals("1")) {
             sign_in_menu();
@@ -78,13 +46,13 @@ public class Users {
         } else if (menu_input.equals("3") && current_level >= 2) { 
             Prdct.reports_menu();
         } else if (menu_input.equals("4") && current_level == 3) { 
-           users_menu(options[3]);
+           users_menu();
         } else {
             main_menu();
         }
     }
 
-    static void users_menu(String title) {
+    static void users_menu() {
 
     }
 }
