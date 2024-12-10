@@ -107,6 +107,7 @@ class InventoryMS {
     }
 
     void manage_menu() {
+        Integer index = null;
         String
         options[] = {"Back", "Add", "Delete", "Edit"},
         menu_input = output_input("MANAGE", menu_format(options)),
@@ -130,6 +131,14 @@ class InventoryMS {
             break;
             case "3":
                 id_input = output_input("DELETE PRODUCT", "Enter Product ID");
+                index = index_of(id_input, products, 0);
+                if (null != index) {
+                    delete_from(products, index);
+                    output_input("DELETE PRODUCT", "Product Deleted"); 
+                } else {
+                    output_input("DELETE PRODUCT", "Product ID Not Found"); 
+                }
+                manage_menu();
             break;
             default: manage_menu();
         }
