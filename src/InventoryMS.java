@@ -8,7 +8,7 @@ class InventoryMS {
     final String // CUSTOMIZATION
     TITLE_BORDER = "______", 
     OPTION_GAP = "-<", 
-    PRINTS_GAP = "\n\n\n\n\n";
+    PRINTS_GAP = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 
     String[][] // TABLES (rows start at 1)
     accounts = {{"ID", "USERNAME", "PASSWORD", "LEVEL"}},
@@ -38,11 +38,14 @@ class InventoryMS {
                 name_input = output_input("LOG IN", "Enter Username");
                 pass_input = output_input("LOG IN", "Enter Password");
                 name_index = index_of(name_input, accounts, 1);
-                if (name_index != null && accounts[name_index][2].equals(pass_input)) {
-                    main_menu();
-                } else {    
-                    output_input("LOG IN", "Invalid Account");
+                if (name_index == null) {
+                    output_input("LOG IN", "Invalid Username");
                     sign_in_menu();
+                } else if (!accounts[name_index][2].equals(pass_input)) {
+                    output_input("LOG IN", "Incorrect Password");
+                    sign_in_menu();
+                } else { 
+                    main_menu();   
                 }
             break;
             case "3":
@@ -62,13 +65,84 @@ class InventoryMS {
     }
 
     void main_menu() {
-        
+        String 
+        options[] = {"Log Out", "Products", "Reports", "Users"},
+        menu_input = output_input("MAIN MENU", menu_format(options));
+        switch(menu_input) {
+            case "1": sign_in_menu(); break;
+            case "2": products_menu(); break;
+            case "3": break;
+            case "4": break;
+            default: main_menu();
+        }
+    }
+
+    void products_menu() {
+        String 
+        options[] = {"Back", "Record Sales", "Sort/Filter", "Manage"},
+        menu_input = output_input("PRODUCTS", menu_format(options));
+        switch(menu_input) {
+            case "1": main_menu(); break;
+            case "2": recordsales_menu(); break;
+            case "3": sortfilter_menu(); break;
+            case "4": manage_menu(); break;
+            default: products_menu();
+        }
+    }
+
+    void recordsales_menu() {
+
+    }
+
+    void sortfilter_menu() {
+        String
+        options[] = {"Back", "Sort", "Filter", "Reset All"},
+        menu_input = output_input("SORT & FILTER", menu_format(options));
+
+        switch (menu_input) {
+            case "1": products_menu(); break;
+            case "2": 
+            default: sortfilter_menu();
+        }
+    }
+
+    void manage_menu() {
+        String
+        options[] = {"Back", "Add", "Delete", "Edit"},
+        menu_input = output_input("MANAGE", menu_format(options)),
+        name_input, type_input, stock_input, id_input;
+
+        switch (menu_input) {
+            case "1": products_menu(); break;
+            case "2":
+                name_input = output_input("ADD PRODUCT", "Enter Product Name");
+                type_input = output_input("ADD PRODUCT", "Enter Product Type");
+                stock_input = output_input("ADD PRODUCT", "Enter Product Amount");
+                if (null != index_of(name_input, products, 1)) {
+                    output_input("ADD PRODUCT", "Product Name Already Used"); 
+                } else if (!is_int(stock_input)) {
+                    output_input("ADD PRODUCT", "Invalid Amount Input"); 
+                } else {
+                    insert_into(products, new String[]{"gen-id",name_input,type_input,stock_input});
+                    output_input("ADD PRODUCT", "New Product Added"); 
+                }
+                manage_menu();
+            break;
+            case "3":
+                id_input = output_input("DELETE PRODUCT", "Enter Product ID");
+            break;
+            default: manage_menu();
+        }
     }
 
     void insert_into(String[][] table, String[] row) {
         if (row[0].equals("gen-id")) {
             if (accounts == table) {
                 row[0] = String.valueOf(next_user_id++);
+            } else if (products == table) {
+                row[0] = String.valueOf(next_product_id++);
+                insert_into(sales, new String[]{row[0],"0","0","0"});
+                insert_into(sales_history, new String[]{row[0]});
             }
         }
         String[][] expanded_table = new String[table.length+1][table[0].length];
@@ -89,6 +163,10 @@ class InventoryMS {
 
     void overwrite(String[][] table, String[][] new_table) {
         if (accounts == table) { accounts = new_table; }
+        else if (products == table) { products = new_table; }
+        else if (sales == table) { sales = new_table; }
+        else if (sales_history == table) { sales_history = new_table; }
+        else if (activity_log == table) { activity_log = new_table; }
     }
     
     String output_input(String title, String display){
@@ -100,8 +178,7 @@ class InventoryMS {
             "Type Here :"
         );
         return SCANNER.next();
-    } 
-    final Scanner SCANNER = new Scanner(System.in);
+    } final Scanner SCANNER = new Scanner(System.in);
 
     String menu_format(String[] options) {
         String formatted_options = "";
@@ -125,7 +202,7 @@ class InventoryMS {
 
     Integer index_of(String target, String[][] table, int column) {
         for(int i = 0; i < table.length; i++) {
-            if (table[i][column].equals(target)) {
+            if (table[i][column].equalsIgnoreCase(target)) {
                 return i;
             }
         }
