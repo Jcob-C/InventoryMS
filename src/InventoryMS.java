@@ -143,6 +143,25 @@ class InventoryMS {
             default: manage_menu();
         }
     }
+    
+    void reports_menu() {
+        String
+        options[] = {"Back", "Top Sales", "Low Stock"},
+        menu_input = output_input("REPORTS", menu_format(options));
+        switch (menu_input){
+            case "1": main_menu(); break;
+            case "2": break;
+            case "3": break;
+        }
+    }
+    
+    void sales_menu(){
+        
+    }
+    
+    void stock_menu(){
+        
+    }
 
     void insert_into(String[][] table, String[] row) {
         if (row[0].equals("gen-id")) {
@@ -228,4 +247,4 @@ class InventoryMS {
         sign_in_menu(); 
     }
     public static void main(String[] args) { new InventoryMS(); }
-}
+    }
