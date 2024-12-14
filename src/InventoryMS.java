@@ -22,11 +22,11 @@ class InventoryMS {
     sort_column = 0;
     boolean
     ascending = true, num_column = true;
-    // search settings
+    // filter settings
     Integer
-    search_column = null;
+    filter_column = null;
     String
-    search_word = null;
+    filter_word = null;
 
     // cached values
     int
@@ -112,10 +112,35 @@ class InventoryMS {
         menu_input = output_input("SORT & FILTER", menu_format(options), products_with_settings());
         switch (menu_input) {
             case "1": products_menu(); break;
-            case "2": break;
-            case "3": break;
+            case "2": sort_menu(); break;
+            case "3": filter_menu(); break;
+            case "4":
+                 
+            break;
             default: sortfilter_menu();
         }
+    }
+
+    void sort_menu() {
+        String
+        options[] = {"Back", "By ID", "By Name", "By Type"},
+        options2[] = {"Ascending", "Descending"},
+        menu_input = output_input("SORT", menu_format(options), products_with_settings());
+        switch (menu_input) {
+            case "1": sortfilter_menu(); break;
+            case "2": case "3": case "4": 
+                sort_column = Integer.parseInt(menu_input)-2;
+                num_column = menu_input.equals("2");
+                menu_input = output_input("SORT", menu_format(options2), null);
+                ascending = !menu_input.equals("2");
+                sort_menu();
+            break;
+            default: sort_menu();
+        }
+    }
+
+    void filter_menu() {
+        
     }
 
     void manage_menu() {
@@ -218,10 +243,10 @@ class InventoryMS {
     final Scanner SCANNER = new Scanner(System.in);
     
     String products_with_settings() {
-        return string_of((sorted(products, sort_column, ascending, num_column)), search_column, search_word);
+        return filtered(sorted(products, sort_column, ascending, num_column), filter_column, filter_word);
     }
 
-    String[][] sorted(String[][] table, Integer column, boolean asc, boolean sorting_nums) {
+    String[][] sorted(String[][] table, Integer sortcolumn, boolean asc, boolean numcolumn) {
         int i, ii;
         String[][] table_copy = new String[table.length][table[0].length];
         for (i = 0; i < table.length; i++) {
@@ -230,29 +255,29 @@ class InventoryMS {
             }
         }
         boolean unsorted = true;
-        String holder = null;
+        String[] holder = null;
         while (unsorted) {
             unsorted = false;
             for (i = 2; i < table.length; i++) {
-                if (asc && !sorting_nums && table_copy[i-1][column].compareToIgnoreCase(table_copy[i][column]) > 0 ||
-                !asc && !sorting_nums && table_copy[i-1][column].compareToIgnoreCase(table_copy[i][column]) < 0 ||
-                asc && sorting_nums && Integer.parseInt(table_copy[i-1][column]) > Integer.parseInt(table_copy[i][column]) ||
-                !asc && sorting_nums && Integer.parseInt(table_copy[i-1][column]) < Integer.parseInt(table_copy[i][column]) ) {
+                if (asc && !numcolumn && table_copy[i-1][sortcolumn].compareToIgnoreCase(table_copy[i][sortcolumn]) > 0 ||
+                !asc && !numcolumn && table_copy[i-1][sortcolumn].compareToIgnoreCase(table_copy[i][sortcolumn]) < 0 ||
+                asc && numcolumn && Integer.parseInt(table_copy[i-1][sortcolumn]) > Integer.parseInt(table_copy[i][sortcolumn]) ||
+                !asc && numcolumn && Integer.parseInt(table_copy[i-1][sortcolumn]) < Integer.parseInt(table_copy[i][sortcolumn]) ) {
                     unsorted = true;
-                    holder = table_copy[i][column];
-                    table_copy[i][column] = table_copy[i-1][column];
-                    table_copy[i-1][column] = holder;
+                    holder = table_copy[i];
+                    table_copy[i] = table_copy[i-1];
+                    table_copy[i-1] = holder;
                 }
             }
         }
         return table_copy;
     }
 
-    String string_of(String[][] table, Integer column, String search) {
+    String filtered(String[][] table, Integer filtercolumn, String filterword) {
         String output = "";
         int x, y;
         for (x = 0; x < table.length; x++) {
-            if (x > 0 && search != null && !table[x][column].equals(search)) { continue; }
+            if (x > 0 && filterword != null && !table[x][filtercolumn].equals(filterword)) { continue; }
             if (!output.isEmpty()) { output += "\n"; }
             for (y = 0;  y < table[x].length; y++) {
                 output += "[" + table[x][y] + "]  ";
