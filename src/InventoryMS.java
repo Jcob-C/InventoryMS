@@ -6,8 +6,8 @@ class InventoryMS {
     signup_users_level = 1;
 
     final String // CUSTOMIZATION
-    TITLE_BORDER = "______", 
-    OPTION_GAP = "-<", 
+    TITLE_BORDER = "_______", 
+    OPTION_GAP = " <- ", 
     PRINTS_GAP = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 
     String[][] // TABLES (rows start at 1)
@@ -115,7 +115,7 @@ class InventoryMS {
             case "2": sort_menu(); break;
             case "3": filter_menu(); break;
             case "4":
-                 
+                
             break;
             default: sortfilter_menu();
         }
