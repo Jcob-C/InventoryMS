@@ -115,7 +115,12 @@ class InventoryMS {
             case "2": sort_menu(); break;
             case "3": filter_menu(); break;
             case "4":
-                
+                sort_column = 0;
+                num_column = true;
+                ascending = true;
+                filter_column = null;
+                filter_word = null;
+                products_menu();
             break;
             default: sortfilter_menu();
         }
@@ -125,14 +130,14 @@ class InventoryMS {
         String
         options[] = {"Back", "By ID", "By Name", "By Type"},
         options2[] = {"Ascending", "Descending"},
-        menu_input = output_input("SORT", menu_format(options), products_with_settings());
-        switch (menu_input) {
+        input = output_input("SORT", menu_format(options), products_with_settings());
+        switch (input) {
             case "1": sortfilter_menu(); break;
             case "2": case "3": case "4": 
-                sort_column = Integer.parseInt(menu_input)-2;
-                num_column = menu_input.equals("2");
-                menu_input = output_input("SORT", menu_format(options2), null);
-                ascending = !menu_input.equals("2");
+                sort_column = Integer.parseInt(input)-2;
+                num_column = input.equals("2");
+                input = output_input("SORT", menu_format(options2), null);
+                ascending = !input.equals("2");
                 sort_menu();
             break;
             default: sort_menu();
@@ -140,7 +145,23 @@ class InventoryMS {
     }
 
     void filter_menu() {
-        
+        String
+        options[] = {"Back", "ID", "Name", "Type", "Remove Filter"},
+        input = output_input("FILTER", menu_format(options), products_with_settings());
+        switch(input) {
+            case "1": sortfilter_menu(); break;
+            case "2": case "3": case "4":
+                filter_column = Integer.parseInt(input) - 2;
+                filter_word = output_input("FILTER", "Enter Search Word", null);
+                filter_menu();
+            break;
+            case "5":
+                filter_column = null;
+                filter_word = null;
+                filter_menu();
+            break;
+            default: filter_menu();
+        }
     }
 
     void manage_menu() {
@@ -176,8 +197,41 @@ class InventoryMS {
                 }
                 manage_menu();
             break;
+            case "4":
+                edit_menu();
+            break;
             default: manage_menu();
         }
+    }
+    
+    void edit_menu() {
+        Integer target_index, target_column;
+        String
+        options[] = {"Back", "Name", "Type", "Stock"},
+        column_input = output_input("EDIT", menu_format(options), products_with_settings()),
+        new_value = null;
+        switch(column_input) {
+            case "1": manage_menu(); return;
+            case "2": case "3": case "4":
+                target_column = Integer.parseInt(column_input) - 1;
+            break;
+            default: edit_menu(); return;
+        }
+        target_index = index_of(output_input("EDIT", "Enter Product ID", products_with_settings()), products, 0);
+        if (target_index != null) {
+            new_value = output_input("EDIT", "Enter New "+products[0][target_column], products_with_settings());
+            if (target_column == 3 && !is_int(new_value)) {
+                output_input("EDIT", "Invalid Stock Input", null);
+            } else if (target_column == 1 && null != index_of(new_value, products, 1)) {
+                output_input("EDIT", "Product Name Already Used", null);                
+            } else {
+                products[target_index][target_column] = new_value;
+                output_input("EDIT", "Product Edited", null);
+            }
+        } else {
+            output_input("EDIT", "Product ID Not Found", null);
+        }
+        edit_menu();
     }
     
     void reports_menu() {
