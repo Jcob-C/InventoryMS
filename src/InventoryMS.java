@@ -37,6 +37,159 @@ class InventoryMS {
     saved_date = null,
     username_logged_in = null;
 
+    // recreate table with new row
+    void insert_into(String[][] table, String[] row) {
+        if (row[0].equals("gen-id")) {
+            if (accounts == table) {
+                row[0] = String.valueOf(next_user_id++);
+            } else if (products == table) {
+                row[0] = String.valueOf(next_product_id++);
+                insert_into(sales, new String[]{row[0],"0","0","0"});
+                insert_into(sales_history, new String[]{row[0]});
+            }
+        }
+        String[][] expanded_table = new String[table.length+1][table[0].length];
+        for (int j = 0; j < table.length; j++) {
+            for (int i = 0; i < table[0].length; i++) {
+                expanded_table[j][i] = table[j][i];
+            }
+        }
+        for (int i = 0; i < row.length; i++) {
+            expanded_table[table.length][i] = row[i];
+        }
+        overwrite(table, expanded_table);
+    }
+
+    // recreate table shorter and without target index
+    void delete_from(String[][] table, int index) {
+
+    }
+
+    // replaces initialized table
+    void overwrite(String[][] table, String[][] new_table) {
+        if (accounts == table) { accounts = new_table; }
+        else if (products == table) { products = new_table; }
+        else if (sales == table) { sales = new_table; }
+        else if (sales_history == table) { sales_history = new_table; }
+        else if (activity_log == table) { activity_log = new_table; }
+    }
+    
+    // returns the user input after printing the title, context of user input, and displayed text
+    String output_input(String title, String context, String display) {
+        String output = PRINTS_GAP + TITLE_BORDER + title + TITLE_BORDER;
+        if (display != null) { output += "\n\n" + display; }
+        output +=  "\n\n" + context + "\n\n" + "Type Here :";
+        System.out.print(output);
+        return SCANNER.next();
+    } final Scanner SCANNER = new Scanner(System.in);
+    
+    // returns the string_of() of products applied with the saved sort and filters settings
+    String string_products() {
+        return string_of(sorted_filtered(products, saved_sort_column, saved_ascending, saved_num_column, saved_filter_column, saved_filter_word));
+    }
+
+    // returns a copy of the table input, also sorted or filtered based on the inputs
+    String[][] sorted_filtered(String[][] table, Integer sort_column, boolean ascending, boolean num_column, Integer filter_column, String filter_word) {
+        int i, ii, filtered = 0;
+        for(i = 0; i < table.length; i++) {
+            if (filter_column != null && filter_word != null && table[i][filter_column].equals(filter_word) ||
+            filter_column == null && filter_word == null) {
+                filtered++;
+            }
+        }
+        String[][] table_copy = new String[filtered][table[0].length];
+        for (i = 0; i < table.length; i++) {
+            if (filter_column != null && filter_word != null && table[i][filter_column].equals(filter_word) ||
+            filter_column == null && filter_word == null) {
+                for (ii = 0; ii < table[i].length; ii++) {
+                    table_copy[i][ii] = table[i][ii];
+                }
+            }
+        }
+        boolean unsorted = true;
+        String[] holder = null;
+        while (unsorted) {
+            unsorted = false;
+            for (i = 2; i < table.length; i++) {
+                if (ascending && !num_column && table_copy[i-1][sort_column].compareToIgnoreCase(table_copy[i][sort_column]) > 0 ||
+                !ascending && !num_column && table_copy[i-1][sort_column].compareToIgnoreCase(table_copy[i][sort_column]) < 0 ||
+                ascending && num_column && Integer.parseInt(table_copy[i-1][sort_column]) > Integer.parseInt(table_copy[i][sort_column]) ||
+                !ascending && num_column && Integer.parseInt(table_copy[i-1][sort_column]) < Integer.parseInt(table_copy[i][sort_column]) ) {
+                    unsorted = true;
+                    holder = table_copy[i];
+                    table_copy[i] = table_copy[i-1];
+                    table_copy[i-1] = holder;
+                }
+            }
+        }
+        return table_copy;
+    }
+
+    // returns the input table as string styled like a table
+    String string_of(String[][] table) {
+        String output = "";
+        int x, y;
+        for (x = 0; x < table.length; x++) {
+            if (!output.isEmpty()) { 
+                output += "\n"; 
+            }
+            for (y = 0;  y < table[x].length; y++) {
+                output += "[" + table[x][y] + "]  ";
+            }
+        } 
+        return output;
+    }
+
+    // returns the input array of options as a string styled like a list
+    String menu_format(String[] options) {
+        String formatted_options = "";
+        for (int i = 0; i < options.length; i++) {
+            if ( !formatted_options.isEmpty() ) {
+                formatted_options += "\n";
+            }
+            formatted_options += (i+1) + OPTION_GAP + options[i];
+        }
+        return formatted_options;
+    }
+
+    // returns true if string input can be a number, false if no
+    boolean is_int(String string) {
+        try {
+            Integer.parseInt(string);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    // returns the index of row where inputs are found, null if not found
+    Integer index_of(String target, String[][] table, int column) {
+        for(int i = 0; i < table.length; i++) {
+            if (table[i][column].equalsIgnoreCase(target)) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    // closes scanner and stops the program
+    void exit_program() {
+        SCANNER.close();
+        System.exit(0);
+    }
+
+    InventoryMS() { 
+        insert_into(accounts, new String[]{"gen-id","admin","pass","3"});
+        insert_into(products, new String[]{"gen-id","product1","type1","20"});
+        insert_into(products, new String[]{"gen-id","product2","type1","8"});
+        insert_into(products, new String[]{"gen-id","product3","type2","14"});
+        sign_in_menu(); 
+    }
+
+    public static void main(String[] args) { 
+        new InventoryMS(); 
+    }
+
     void sign_in_menu() {
         Integer name_index = null;
         String 
@@ -251,158 +404,5 @@ class InventoryMS {
     
     void stock_menu(){
         
-    }
-
-    // add a new row to a table
-    void insert_into(String[][] table, String[] row) {
-        if (row[0].equals("gen-id")) {
-            if (accounts == table) {
-                row[0] = String.valueOf(next_user_id++);
-            } else if (products == table) {
-                row[0] = String.valueOf(next_product_id++);
-                insert_into(sales, new String[]{row[0],"0","0","0"});
-                insert_into(sales_history, new String[]{row[0]});
-            }
-        }
-        String[][] expanded_table = new String[table.length+1][table[0].length];
-        for (int j = 0; j < table.length; j++) {
-            for (int i = 0; i < table[0].length; i++) {
-                expanded_table[j][i] = table[j][i];
-            }
-        }
-        for (int i = 0; i < row.length; i++) {
-            expanded_table[table.length][i] = row[i];
-        }
-        overwrite(table, expanded_table);
-    }
-
-    // recreate table without target index
-    void delete_from(String[][] table, int index) {
-
-    }
-
-    // replaces an initialized table
-    void overwrite(String[][] table, String[][] new_table) {
-        if (accounts == table) { accounts = new_table; }
-        else if (products == table) { products = new_table; }
-        else if (sales == table) { sales = new_table; }
-        else if (sales_history == table) { sales_history = new_table; }
-        else if (activity_log == table) { activity_log = new_table; }
-    }
-    
-    // returns the user input after printing the title, context of user input, and displayed text
-    String output_input(String title, String context, String display) {
-        String output = PRINTS_GAP + TITLE_BORDER + title + TITLE_BORDER;
-        if (display != null) { output += "\n\n" + display; }
-        output +=  "\n\n" + context + "\n\n" + "Type Here :";
-        System.out.print(output);
-        return SCANNER.next();
-    } final Scanner SCANNER = new Scanner(System.in);
-    
-    // returns the string_of() of products applied with the saved sort and filters settings
-    String string_products() {
-        return string_of(sorted_filtered(products, saved_sort_column, saved_ascending, saved_num_column, saved_filter_column, saved_filter_word));
-    }
-
-    // returns a copy of the table input, also sorted or filtered based on the inputs
-    String[][] sorted_filtered(String[][] table, Integer sort_column, boolean ascending, boolean num_column, Integer filter_column, String filter_word) {
-        int i, ii, filtered = 0;
-        for(i = 0; i < table.length; i++) {
-            if (filter_column != null && filter_word != null && table[i][filter_column].equals(filter_word) ||
-            filter_column == null && filter_word == null) {
-                filtered++;
-            }
-        }
-        String[][] table_copy = new String[filtered][table[0].length];
-        for (i = 0; i < table.length; i++) {
-            if (filter_column != null && filter_word != null && table[i][filter_column].equals(filter_word) ||
-            filter_column == null && filter_word == null) {
-                for (ii = 0; ii < table[i].length; ii++) {
-                    table_copy[i][ii] = table[i][ii];
-                }
-            }
-        }
-        boolean unsorted = true;
-        String[] holder = null;
-        while (unsorted) {
-            unsorted = false;
-            for (i = 2; i < table.length; i++) {
-                if (ascending && !num_column && table_copy[i-1][sort_column].compareToIgnoreCase(table_copy[i][sort_column]) > 0 ||
-                !ascending && !num_column && table_copy[i-1][sort_column].compareToIgnoreCase(table_copy[i][sort_column]) < 0 ||
-                ascending && num_column && Integer.parseInt(table_copy[i-1][sort_column]) > Integer.parseInt(table_copy[i][sort_column]) ||
-                !ascending && num_column && Integer.parseInt(table_copy[i-1][sort_column]) < Integer.parseInt(table_copy[i][sort_column]) ) {
-                    unsorted = true;
-                    holder = table_copy[i];
-                    table_copy[i] = table_copy[i-1];
-                    table_copy[i-1] = holder;
-                }
-            }
-        }
-        return table_copy;
-    }
-
-    // returns the input table as string styled like a table
-    String string_of(String[][] table) {
-        String output = "";
-        int x, y;
-        for (x = 0; x < table.length; x++) {
-            if (!output.isEmpty()) { 
-                output += "\n"; 
-            }
-            for (y = 0;  y < table[x].length; y++) {
-                output += "[" + table[x][y] + "]  ";
-            }
-        } 
-        return output;
-    }
-
-    // returns the input array of options as a string styled like a list
-    String menu_format(String[] options) {
-        String formatted_options = "";
-        for (int i = 0; i < options.length; i++) {
-            if ( !formatted_options.isEmpty() ) {
-                formatted_options += "\n";
-            }
-            formatted_options += (i+1) + OPTION_GAP + options[i];
-        }
-        return formatted_options;
-    }
-
-    // returns true if string input can be a number, false if no
-    boolean is_int(String string) {
-        try {
-            Integer.parseInt(string);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    // returns the index of row where inputs are found, null if not found
-    Integer index_of(String target, String[][] table, int column) {
-        for(int i = 0; i < table.length; i++) {
-            if (table[i][column].equalsIgnoreCase(target)) {
-                return i;
-            }
-        }
-        return null;
-    }
-
-    // closes scanner and stops the program
-    void exit_program() {
-        SCANNER.close();
-        System.exit(0);
-    }
-
-    InventoryMS() { 
-        insert_into(accounts, new String[]{"gen-id","admin","pass","3"});
-        insert_into(products, new String[]{"gen-id","product1","type1","20"});
-        insert_into(products, new String[]{"gen-id","product2","type1","8"});
-        insert_into(products, new String[]{"gen-id","product3","type2","14"});
-        sign_in_menu(); 
-    }
-
-    public static void main(String[] args) { 
-        new InventoryMS(); 
     }
 }
