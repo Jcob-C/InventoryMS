@@ -1,10 +1,12 @@
-// import date util
-// import file writer / reader
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
+
 import java.util.Scanner;
 
 class InventoryMS {
     final int // CONFIGURATION
-    activity_log_limit = 50,
+    activity_log_limit = 20,
     signup_users_level = 0;
 
     final String // CUSTOMIZATION
@@ -15,11 +17,16 @@ class InventoryMS {
 
     String[][] // TABLES (rows start at 1)
     accounts = {{"ID", "USERNAME", "PASSWORD", "LEVEL"}},
+    activity_log = {{"DATE & TIME", "USERNAME", "ACTIVITY"}},
+    // these 3 below are in sync
     products = {{"ID", "NAME", "TYPE", "STOCK"}},
     sales = {{"PRODUCT ID", "NAME", "TODAY", "7 DAYS", "30 DAYS"}},
-    sales_history = new String[1][31], // {PRODUCT ID, DAY 1-30}
-    activity_log = {{"DATE & TIME", "USERNAME", "ACTIVITY"}};
+    sales_history = new String[1][31]; // {PRODUCT ID, DAY 1-30}
 
+    final DateTimeFormatter date_format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    final DateTimeFormatter time_format = DateTimeFormatter.ofPattern("HH:mm:ss");
+    final ZoneId phtimeZ = ZoneId.of("Asia/Manila");
+    
     // sort settings
     Integer
     saved_sort_column = 0;
@@ -51,6 +58,7 @@ class InventoryMS {
         insert_into(products, new String[]{"gen-id","product1","type1","20"});
         insert_into(products, new String[]{"gen-id","product2","type1","8"});
         insert_into(products, new String[]{"gen-id","product3","type2","14"});
+        daily_update();
         sign_in_menu(); 
     }
 
@@ -64,6 +72,10 @@ class InventoryMS {
                 insert_into(sales, new String[]{row[0],row[1],"0","0","0"});
                 insert_into(sales_history, new String[]{row[0]});
             }
+        } else if (activity_log == table && activity_log.length >= activity_log_limit+1) {
+            delete_from(activity_log, 1);
+            insert_into(activity_log, row);
+            return;
         }
         String[][] expanded_table = new String[table.length+1][table[0].length];
         for (int j = 0; j < table.length; j++) {
@@ -79,7 +91,20 @@ class InventoryMS {
 
     // copies table into shorter, without the row of index
     void delete_from(String[][] table, int index) {
-
+        if (index < 0 || table.length <= index) { 
+            return; 
+        }
+        if (table == products) {
+            delete_from(sales, index);
+            delete_from(sales_history, index);
+        }
+        String[][] shorter_table = new String[table.length-1][table[0].length];
+        int offset = 0;
+        for (int i = 0; i < shorter_table.length; i++) {
+            if (i == index) { offset = 1; }
+            shorter_table[i] = table[i+offset];
+        }
+        overwrite(table, shorter_table);
     }
 
     // replaces an initialized table
@@ -99,16 +124,12 @@ class InventoryMS {
         }
         output += TITLE_BORDER + title + TITLE_BORDER;
         if (display != null) { output += "\n\n" + display; }
-        output +=  "\n\n" + context + "\n\n" + "Type Here :";
+        output +=  "\n\n" + context + "\n\n" + "(no_spaces!)\nType Here :";
         System.out.print(output);
         return SCANNER.next();
     } final Scanner SCANNER = new Scanner(System.in);
-    
-    // returns the string_of() of products applied with the saved sort and filters settings
-    String string_products() {
-        return string_of(sorted_filtered(products, saved_sort_column, saved_ascending, saved_num_column, saved_filter_column, saved_filter_word));
-    }
 
+    // if sort column is null, it will not be sorted
     // returns a copy of the table, sorted or filtered based on the parameters (first row is ignored)
     String[][] sorted_filtered(String[][] table, Integer sort_column, boolean ascending, boolean num_column, Integer filter_column, String filter_word) {
         int i, ii, filtered = 0;
@@ -127,6 +148,7 @@ class InventoryMS {
                 }
             }
         }
+        if (sort_column == null) { return table_copy; }
         boolean unsorted = true;
         String[] holder = null;
         while (unsorted) {
@@ -134,8 +156,8 @@ class InventoryMS {
             for (i = 2; i < table_copy.length; i++) {
                 if (ascending && !num_column && table_copy[i-1][sort_column].compareToIgnoreCase(table_copy[i][sort_column]) > 0 ||
                 !ascending && !num_column && table_copy[i-1][sort_column].compareToIgnoreCase(table_copy[i][sort_column]) < 0 ||
-                ascending && num_column && Integer.parseInt(table_copy[i-1][sort_column]) > Integer.parseInt(table_copy[i][sort_column]) ||
-                !ascending && num_column && Integer.parseInt(table_copy[i-1][sort_column]) < Integer.parseInt(table_copy[i][sort_column]) ) {
+                ascending && num_column && prsInt(table_copy[i-1][sort_column]) > prsInt(table_copy[i][sort_column]) ||
+                !ascending && num_column && prsInt(table_copy[i-1][sort_column]) < prsInt(table_copy[i][sort_column]) ) {
                     unsorted = true;
                     holder = table_copy[i];
                     table_copy[i] = table_copy[i-1];
@@ -164,6 +186,15 @@ class InventoryMS {
         return output;
     }
 
+    // string_of() but only for a row
+    String string_of(String[] row) {
+        String output = "";
+        for (int i = 0; i < row.length; i++) {
+            output += "[" + row[i] + "]  ";
+        } 
+        return output;
+    }
+
     // returns the input array of options as a string styled like a list
     String menu_format(String[] options) {
         String formatted_options = "";
@@ -179,21 +210,38 @@ class InventoryMS {
     // returns true if string input can be a number, false if no
     boolean is_int(String string) {
         try {
-            Integer.parseInt(string);
+            prsInt(string);
             return true;
         } catch (NumberFormatException e) {
             return false;
         }
     }
 
-    // returns the index of row where inputs are found, null if not found
+    // returns the index of row where inputs are found, null if not found (ignores first row)
     Integer index_of(String target, String[][] table, int column) {
-        for(int i = 0; i < table.length; i++) {
+        for(int i = 1; i < table.length; i++) {
             if (table[i][column].equalsIgnoreCase(target)) {
                 return i;
             }
         }
         return null;
+    }
+
+    // checks date and updates date, sales, sales history
+    void daily_update() {
+        String current_date = get_datetime().format(date_format);
+        if (saved_date == null) { 
+            saved_date = current_date; 
+        } else if(!current_date.equals(saved_date)) {
+            saved_date = current_date;
+
+        }
+    }
+
+    // logs parameter string as the action done
+    void log_this(String action) {
+        String[] row = {saved_date+" "+get_datetime().format(time_format), username_logged_in, action};
+        insert_into(activity_log, row);
     }
 
     // closes scanner and stops the program
@@ -202,22 +250,44 @@ class InventoryMS {
         System.exit(0);
     }
 
+    // shortened the string_of() of products applied with the saved sort and filters settings
+    String string_products() {
+        return string_of(sorted_filtered(products, saved_sort_column, saved_ascending, saved_num_column, saved_filter_column, saved_filter_word));
+    }
+
+    // shortened getting string_of() specific row with index, with column names at the top
+    String string_row_of(int index, String[][] table) {
+        return string_of(table[0])+"\n\n"+string_of(table[index]);
+    }
+
+    // shortened Integer.parseInt()
+    Integer prsInt(String string) {
+        return Integer.parseInt(string);
+    }
+
+    // shortened zonedatetime.now
+    ZonedDateTime get_datetime() {
+        return ZonedDateTime.now(phtimeZ);
+    }
+
 
 
 
 
     /*
-     *  ----------------------------\/-MENUS-\/--------------------------------------
+     *  ----------------------------\/---MENUS---\/--------------------------------------
      */
 
 
 
 
 
+
     void sign_in_menu() {
-        Integer name_index = null;
+        Integer 
+        name_index = null;
         String 
-        menu_options[] = {"Exit", "Log In", "Sign Up"},
+        menu_options[] = {"Exit", "Log In", "Sign Up", "Next Day (debug sales)"},
         menu_input = output_input("SIGN IN", menu_format(menu_options), null), 
         name_input, pass_input;
 
@@ -229,37 +299,38 @@ class InventoryMS {
                 name_index = index_of(name_input, accounts, 1);
                 if (name_index == null) {
                     output_input("LOG IN", "Invalid Username", null);
-                    sign_in_menu();
                 } else if (!accounts[name_index][2].equals(pass_input)) {
                     output_input("LOG IN", "Incorrect Password", null);
-                    sign_in_menu();
                 } else { 
                     username_logged_in = name_input;
-                    level_logged_in = Integer.parseInt(accounts[name_index][3]);
-                    main_menu();   
+                    level_logged_in = prsInt(accounts[name_index][3]);
+                    log_this("Logged In");
+                    main_menu(); 
+                    return;   
                 }
             break;
             case "3":
                 name_input = output_input("SIGN UP", "Enter Username", null);
                 pass_input = output_input("SIGN UP", "Enter Password", null);
                 name_index = index_of(name_input, accounts, 1);
-                if (name_index == null) {
+                if (name_index != null) {
+                    output_input("SIGN UP", "Username Already Used", null);
+                } else {    
                     insert_into(accounts, new String[]{"gen-id", name_input, pass_input, String.valueOf(signup_users_level)});
                     output_input("SIGN UP", "Account Created", null);
-                } else {    
-                    output_input("SIGN UP", "Username Already Used", null);
-                }
-                sign_in_menu();
+                } 
             break;
-            default: sign_in_menu();
+            case "4": saved_date = "n word";
         }
+        sign_in_menu();
     }
 
     void main_menu() {
         String 
         options[] = {"Log Out", "Products", "Reports", "Users"},
         menu_input = output_input("MAIN MENU", menu_format(options), null);
-        if (is_int(menu_input) && Integer.parseInt(menu_input)-1 > level_logged_in) {
+
+        if (is_int(menu_input) && prsInt(menu_input)-1 > level_logged_in) {
             output_input("MAIN MENU", "Access Denied", null);
             main_menu();
             return;
@@ -268,7 +339,7 @@ class InventoryMS {
             case "1": sign_in_menu(); break;
             case "2": products_menu(); break;
             case "3": reports_menu(); break;
-            case "4": break;
+            case "4": users_menu(); break;
             default: main_menu();
         }
     }
@@ -277,6 +348,7 @@ class InventoryMS {
         String 
         options[] = {"Back", "Record Sales", "Sort/Filter", "Manage"},
         menu_input = output_input("PRODUCTS", menu_format(options), string_products());
+
         switch(menu_input) {
             case "1": main_menu(); break;
             case "2": recordsales_menu(); break;
@@ -287,13 +359,58 @@ class InventoryMS {
     }
 
     void recordsales_menu() {
+        Integer 
+        index = null;
+        String 
+        options[] = {"Back", "Sell", "Refund"},
+        menu_input = output_input("RECORD SALES", menu_format(options), string_products()),
+        id_input = null,
+        sales_input = null;
 
+        switch(menu_input) {
+            case "1": products_menu(); return;
+            case "2":
+                id_input = output_input("SELL", "Enter Product ID", string_products());
+                index = index_of(id_input, products, 0);
+                if (index == null) { 
+                    output_input("SELL", "Product ID Not Found", null);
+                    break; 
+                } 
+                sales_input = output_input("SELL", "Enter Sales", string_row_of(index,products)); 
+                if (!is_int(sales_input)) {
+                    output_input("SELL", "Invalid Sales Input", null);
+                } else if (prsInt(products[index][3]) < prsInt(sales_input)) {
+                    output_input("SELL", "Not Enough Stock", null);
+                } else {
+                    sales[index][2] = String.valueOf(prsInt(sales[index][2]) + prsInt(sales_input));
+                    products[index][3] = String.valueOf(prsInt(products[index][3]) - prsInt(sales_input));
+                    output_input("SELL", "Sales Added & Stocks Subtracted", null);
+                }
+            break;
+            case "3":
+                id_input = output_input("REFUND", "Enter Product ID", string_products());
+                index = index_of(id_input, products, 0);
+                if (index == null) { 
+                    output_input("SELL", "Product ID Not Found", null);
+                    break; 
+                } 
+                sales_input = output_input("REFUND", "Enter Sales", string_row_of(index,products));
+                if (!is_int(sales_input)) {
+                    output_input("REFUND", "Invalid Inputs", null);
+                } else {
+                    sales[index][2] = String.valueOf(prsInt(sales[index][2]) - prsInt(sales_input));
+                    products[index][3] = String.valueOf(prsInt(products[index][3]) + prsInt(sales_input));
+                    output_input("SELL", "Sales Subtracted & Stocks Returned", null);
+                }
+        }
+        recordsales_menu();
     }
 
     void sortfilter_menu() {
         String
         options[] = {"Back", "Sort", "Filter", "Reset All"},
         menu_input = output_input("SORT & FILTER", menu_format(options), string_products());
+
         switch (menu_input) {
             case "1": products_menu(); break;
             case "2": sort_menu(); break;
@@ -314,38 +431,36 @@ class InventoryMS {
         String
         options[] = {"Back", "By ID", "By Name", "By Type"},
         options2[] = {"Ascending", "Descending"},
-        input = output_input("SORT", menu_format(options), string_products());
-        switch (input) {
-            case "1": sortfilter_menu(); break;
+        menu_input = output_input("SORT", menu_format(options), string_products()),
+        ascending_input = null;
+
+        switch (menu_input) {
+            case "1": sortfilter_menu(); return;
             case "2": case "3": case "4": 
-                saved_sort_column = Integer.parseInt(input)-2;
-                saved_num_column = input.equals("2");
-                input = output_input("SORT", menu_format(options2), null);
-                saved_ascending = !input.equals("2");
-                sort_menu();
-            break;
-            default: sort_menu();
+                saved_sort_column = prsInt(menu_input)-2;
+                saved_num_column = menu_input.equals("2");
+                ascending_input = output_input("SORT", menu_format(options2), null);
+                saved_ascending = !ascending_input.equals("2");
         }
+        sort_menu();
     }
 
     void filter_menu() {
         String
         options[] = {"Back", "ID", "Name", "Type", "Remove Filter"},
         input = output_input("FILTER", menu_format(options), string_products());
+
         switch(input) {
-            case "1": sortfilter_menu(); break;
+            case "1": sortfilter_menu(); return;
             case "2": case "3": case "4":
-                saved_filter_column = Integer.parseInt(input) - 2;
+                saved_filter_column = prsInt(input) - 2;
                 saved_filter_word = output_input("FILTER", "Enter Search Word", null);
-                filter_menu();
             break;
             case "5":
                 saved_filter_column = null;
                 saved_filter_word = null;
-                filter_menu();
-            break;
-            default: filter_menu();
         }
+        filter_menu();
     }
 
     void manage_menu() {
@@ -354,8 +469,9 @@ class InventoryMS {
         options[] = {"Back", "Add", "Delete", "Edit"},
         menu_input = output_input("MANAGE", menu_format(options), string_products()),
         name_input, type_input, stock_input, id_input;
+
         switch (menu_input) {
-            case "1": products_menu(); break;
+            case "1": products_menu(); return;
             case "2":
                 name_input = output_input("ADD PRODUCT", "Enter Product Name", string_products());
                 type_input = output_input("ADD PRODUCT", "Enter Product Type", string_products());
@@ -368,7 +484,6 @@ class InventoryMS {
                     insert_into(products, new String[]{"gen-id",name_input,type_input,stock_input});
                     output_input("ADD PRODUCT", "New Product Added", string_products()); 
                 }
-                manage_menu();
             break;
             case "3":
                 id_input = output_input("DELETE PRODUCT", "Enter Product ID", string_products());
@@ -379,13 +494,10 @@ class InventoryMS {
                 } else {
                     output_input("DELETE PRODUCT", "Product ID Not Found", string_products()); 
                 }
-                manage_menu();
             break;
-            case "4":
-                edit_menu();
-            break;
-            default: manage_menu();
+            case "4": edit_menu(); return;
         }
+        manage_menu();
     }
     
     void edit_menu() {
@@ -397,13 +509,13 @@ class InventoryMS {
         switch(column_input) {
             case "1": manage_menu(); return;
             case "2": case "3": case "4":
-                target_column = Integer.parseInt(column_input) - 1;
+                target_column = prsInt(column_input) - 1;
             break;
             default: edit_menu(); return;
         }
         target_index = index_of(output_input("EDIT", "Enter Product ID", string_products()), products, 0);
         if (target_index != null) {
-            new_value = output_input("EDIT", "Enter New "+products[0][target_column], string_products());
+            new_value = output_input("EDIT", "Enter New "+products[0][target_column], string_row_of(target_index, products));
             if (target_column == 3 && !is_int(new_value)) {
                 output_input("EDIT", "Invalid Stock Input", null);
             } else if (target_column == 1 && null != index_of(new_value, products, 1)) {
@@ -437,7 +549,7 @@ class InventoryMS {
         switch (menu_input){
             case "1": reports_menu(); break;
             case "2": case "3": case "4":
-                int int_menu_input = Integer.parseInt(menu_input);
+                int int_menu_input = prsInt(menu_input);
                 output_input(
                     "TOP SALES " + sales[0][int_menu_input],
                     string_of(sorted_filtered(sales,int_menu_input,false,true,null,null)),
@@ -452,5 +564,10 @@ class InventoryMS {
     void stock_menu(){
         output_input("LOW STOCK", string_of(sorted_filtered(products,3,true,true,null,null)), null);
         reports_menu();
+    }
+
+    void users_menu() {
+        output_input("ACTIVITY LOG", string_of(sorted_filtered(activity_log,null,true,false,null,null)), null);
+        main_menu();
     }
 }
