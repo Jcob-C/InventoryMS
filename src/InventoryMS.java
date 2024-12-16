@@ -1,8 +1,15 @@
+import java.util.Scanner;
+
+// file handling
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
+// time with timezone
 import java.time.ZonedDateTime; 
 import java.time.ZoneId; 
 import java.time.format.DateTimeFormatter; 
-
-import java.util.Scanner;
 
 class InventoryMS {
     final int activity_log_limit = 20;
@@ -13,10 +20,16 @@ class InventoryMS {
     final int
     PRINTS_GAP = 50;
 
-    String[][] // TABLES (rows start at 1, initialized row is for columm names)
+    // file handled variables
+    int 
+    next_user_id = 1,
+    next_product_id = 1;
+    String
+    saved_date = null;
+    String[][] 
+    // TABLES (rows start at 1, initialized row is for columm names)
     accounts = {{"ID", "USERNAME", "PASSWORD", "LEVEL"}},
     activity_log = {{"DATE & TIME", "USERNAME", "ACTIVITY"}},
-    
     products = {{"ID", "NAME", "TYPE", "STOCK"}},
     sales = {{"PRODUCT ID", "NAME", "TODAY", "7 DAYS", "30 DAYS"}},
     sales_history = new String[1][31]; // {PRODUCT ID, DAY 1-30}
@@ -34,11 +47,8 @@ class InventoryMS {
 
     // cached values
     int
-    next_user_id = 1,
-    next_product_id = 1,
     level_logged_in = 0;
     String
-    saved_date = null,
     username_logged_in = null;
     
     final DateTimeFormatter date_format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -46,17 +56,13 @@ class InventoryMS {
     final ZoneId phtimeZ = ZoneId.of("Asia/Manila");
     final Scanner SCANNER = new Scanner(System.in);
 
-    // start of project
     public static void main(String[] args) { 
         new InventoryMS(); 
     }
 
-    // start of class
     InventoryMS() { 
-        insert_into(accounts, new String[]{"gen-id","admin","pass","3"});
-        insert_into(products, new String[]{"gen-id","product1","type1","20"});
-        insert_into(products, new String[]{"gen-id","product2","type1","8"});
-        insert_into(products, new String[]{"gen-id","product3","type2","14"});
+        //insert_into(accounts, new String[]{"gen-id","admin","pass","3"});
+        load_alltables();
         sign_in_menu(); 
     }
 
@@ -118,7 +124,93 @@ class InventoryMS {
         else if (activity_log == table) { activity_log = new_table; }
     }
 
+    void save_table(String[][] table, String file_name) {
+        try {
+            FileWriter writer = new FileWriter(file_name+".txt");
+            String string_table = "";
+            for (int i = 1; i < table.length; i++) {
+                for(String value : table[i]) {
+                    if ( value != null ) {
+                        string_table += value + ","; 
+                    }
+                    else {
+                        string_table += "null,";
+                    }
+                }
+                string_table += "\n";
+            }
+            writer.write(string_table);
+            writer.close();
+        } 
+        catch (IOException e) {
+        }
+    }
     
+    void load_table(String[][] table, String file_name) {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(file_name + ".txt"));
+            String line;
+            String table_id = table[0][2];
+            String[][] target = table;
+            while ((line = reader.readLine()) != null) {
+                String[] row = line.split(","); // Split the line by commas
+                for (int i = 0; i < row.length; i++) {
+                    if (row[i].equals("null")) {
+                        row[i] = null; // Handle 'null' values
+                    }
+                }
+                if (table_id != null && accounts[0][2].equals(table_id)) { target = accounts; }
+                else if (table_id != null && activity_log[0][2].equals(table_id)) { target = activity_log; }
+                else if (table_id != null && products[0][2].equals(table_id)) { target = products; }
+                else if (table_id != null && sales[0][2].equals(table_id)) { target = sales; }
+                else if (table_id == null && sales_history[0][2] == null) { target = sales_history; }
+                insert_into(target, row);
+            }
+            reader.close();
+        } catch (IOException e) {
+        }
+    }
+    
+    void load_alltables() {
+        load_other();
+        load_table(accounts, "accounts");
+        load_table(activity_log, "activity-log");
+        load_table(products, "products");
+        load_table(sales, "sales");
+        load_table(sales_history, "sales-history");
+    }
+
+    void save_alltables() {
+        save_other();
+        save_table(accounts, "accounts");
+        save_table(activity_log, "activity-log");
+        save_table(products, "products");
+        save_table(sales, "sales");
+        save_table(sales_history, "sales-history");
+    }
+    
+    void save_other() {
+        try {
+            FileWriter writer = new FileWriter("other.txt");
+            writer.write(next_user_id+"\n");
+            writer.write(next_product_id+"\n");
+            writer.write(saved_date+"\n");
+            writer.close();
+        } 
+        catch (IOException e) {
+        }
+    }
+
+    void load_other() {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader("other.txt"));
+            next_user_id = Integer.parseInt(reader.readLine());
+            next_product_id = Integer.parseInt(reader.readLine());
+            saved_date = reader.readLine();
+            reader.close();
+        } catch (IOException e) {
+        }
+    }
 
     // returns the user input after printing the (title, context for user input, additional displayed text)
     String output_input(String title, String context, String display) {
@@ -130,7 +222,7 @@ class InventoryMS {
         if ( display != null ) { 
             output += "\n\n" + display; 
         }
-        output +=  "\n\n" + context + "\n\n" + "(no_spaces!)\nType Here :";
+        output +=  "\n\n" + context + "\n\n" + "(no_spaces)\nType Here :";
         System.out.print(output);
         return SCANNER.next();
     }
@@ -285,6 +377,7 @@ class InventoryMS {
 
     // closes scanner and stops the program
     void exit_program() {
+        save_alltables();
         SCANNER.close();
         System.exit(0);
     }
@@ -329,8 +422,8 @@ class InventoryMS {
         Integer 
         name_index = null;
         String 
-        menu_options[] = {"Exit", "Log In", "Sign Up", "Next Day (for debugging sales)"},
-        menu_input = output_input("SIGN IN", menu_format(menu_options), string_of(sales_history)), 
+        menu_options[] = {"Exit", "Log In", "Sign Up", "Next Day (debug)"},
+        menu_input = output_input("SIGN IN", menu_format(menu_options), null), 
         name_input, pass_input;
 
         switch (menu_input) {
@@ -438,6 +531,7 @@ class InventoryMS {
                     sales[index][2] = String.valueOf(prsInt(sales[index][2]) + prsInt(sales_input));
                     products[index][3] = String.valueOf(prsInt(products[index][3]) - prsInt(sales_input));
                     output_input("SELL", "Sales Added & Stocks Subtracted", null);
+                    log_this("Sold "+sales_input+" "+products[index][1]);
                 }
             break;
             case "3":
@@ -458,6 +552,7 @@ class InventoryMS {
                     sales[index][2] = String.valueOf(prsInt(sales[index][2]) - prsInt(sales_input));
                     products[index][3] = String.valueOf(prsInt(products[index][3]) + prsInt(sales_input));
                     output_input("SELL", "Sales Subtracted & Stocks Returned", null);
+                    log_this("Refunded "+sales_input+" "+products[index][1]);
                 }
         }
         recordsales_menu();
@@ -544,6 +639,7 @@ class InventoryMS {
                 else {
                     insert_into(products, new String[]{"gen-id",name_input,type_input,stock_input});
                     output_input("ADD PRODUCT", "New Product Added", string_products()); 
+                    log_this("Added Product: "+name_input);
                 }
             break;
             case "3":
@@ -551,6 +647,7 @@ class InventoryMS {
                 index = index_of(id_input, products, 0);
 
                 if ( null != index ) {
+                    log_this("Deleted Product: "+products[index][1]);
                     delete_from(products, index);
                     output_input("DELETE PRODUCT", "Product Deleted", string_products()); 
                 } 
@@ -597,6 +694,7 @@ class InventoryMS {
                 output_input("EDIT", "Product Name Already Used", null);    
             } 
             else {
+                log_this("Edited Product: "+products[target_index][1]+"'s "+products[0][target_column]+" to "+new_value);
                 products[target_index][target_column] = new_value;
                 output_input("EDIT", "Product Edited", null);
             }
@@ -687,6 +785,7 @@ class InventoryMS {
                 else {
                     insert_into(accounts, new String[]{"gen-id",name_input,pass_input,level_input});
                     output_input("CREATE ACCOUNT", "New Account Created", null); 
+                    log_this("Created Account: "+name_input);
                 }
             break;
             case "3":
@@ -694,6 +793,7 @@ class InventoryMS {
                 index = index_of(id_input, accounts, 0);
 
                 if ( null != index ) {
+                    log_this("Deleted Account: "+accounts[index][1]);
                     delete_from(accounts, index);
                     output_input("DELETE ACCOUNT", "Account Deleted", null); 
                 } 
@@ -740,6 +840,7 @@ class InventoryMS {
                 output_input("EDIT ACCOUNT", "Username Already Used", null);    
             } 
             else {
+                log_this("Edited "+accounts[target_index][1]+"'s "+accounts[0][target_column]+" to "+new_value);
                 accounts[target_index][target_column] = new_value;
                 output_input("EDIT ACCOUNT", "Account Edited", null);
             }
