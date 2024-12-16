@@ -16,7 +16,7 @@ class InventoryMS {
     final int
     PRINTS_GAP = 50;
 
-    String[][] // TABLES (rows start at 1)
+    String[][] // TABLES (rows start at 1, initialized row is for columm names)
     accounts = {{"ID", "USERNAME", "PASSWORD", "LEVEL"}},
     activity_log = {{"DATE & TIME", "USERNAME", "ACTIVITY"}},
     // these 3 below are in sync
@@ -24,10 +24,6 @@ class InventoryMS {
     sales = {{"PRODUCT ID", "NAME", "TODAY", "7 DAYS", "30 DAYS"}},
     sales_history = new String[1][31]; // {PRODUCT ID, DAY 1-30}
 
-    final DateTimeFormatter date_format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    final DateTimeFormatter time_format = DateTimeFormatter.ofPattern("HH:mm:ss");
-    final ZoneId phtimeZ = ZoneId.of("Asia/Manila");
-    
     // sort settings
     Integer
     saved_sort_column = 0;
@@ -47,6 +43,11 @@ class InventoryMS {
     String
     saved_date = null,
     username_logged_in = null;
+    
+    final DateTimeFormatter date_format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    final DateTimeFormatter time_format = DateTimeFormatter.ofPattern("HH:mm:ss");
+    final ZoneId phtimeZ = ZoneId.of("Asia/Manila");
+    final Scanner SCANNER = new Scanner(System.in);
 
     // start of project
     public static void main(String[] args) { 
@@ -59,7 +60,6 @@ class InventoryMS {
         insert_into(products, new String[]{"gen-id","product1","type1","20"});
         insert_into(products, new String[]{"gen-id","product2","type1","8"});
         insert_into(products, new String[]{"gen-id","product3","type2","14"});
-        daily_update();
         sign_in_menu(); 
     }
 
@@ -120,7 +120,9 @@ class InventoryMS {
         else if (sales_history == table) { sales_history = new_table; }
         else if (activity_log == table) { activity_log = new_table; }
     }
+
     
+
     // returns the user input after printing the (title, context for user input, additional displayed text)
     String output_input(String title, String context, String display) {
         String output = "";
@@ -134,8 +136,7 @@ class InventoryMS {
         output +=  "\n\n" + context + "\n\n" + "(no_spaces!)\nType Here :";
         System.out.print(output);
         return SCANNER.next();
-    } 
-    final Scanner SCANNER = new Scanner(System.in);
+    }
 
     // if sort column is null, it will not be sorted
     // returns a copy of the table, sorted or filtered based on the parameters (first row is ignored)
@@ -238,13 +239,45 @@ class InventoryMS {
     // checks date and updates date, sales, sales history
     void daily_update() {
         String current_date = get_datetime().format(date_format);
+        int i, ii;
         if ( saved_date == null ) { 
             saved_date = current_date; 
         } 
         else if( !current_date.equals(saved_date) ) {
             saved_date = current_date;
-
+            for (i = 1; i < sales.length; i++) {
+                update_saleshistory(i, sales[i][2]);
+                sales[i][2] = "0";
+                sales[i][3] = get_avg(sales_history[i], 7);
+                sales[i][4] = get_avg(sales_history[i], 30);
+            }
         }
+    }
+
+    // updates sales history row
+    void update_saleshistory(int row_index, String new_sales) {
+        for (int i = 1; i < 30; i++) {
+            sales_history[row_index][i] = sales_history[row_index][i+1];
+        }
+        sales_history[row_index][30] = new_sales;
+    }
+
+    // get the average of a sales history row, depending on the amount of days
+    String get_avg(String[] history_row, int days) {
+        int
+        total = 0, 
+        day = 0;
+        for (int i = 30; i > 0; i--) {
+            if ( history_row[i] == null ) {
+                break;
+            }
+            else if ( day == days ) {
+                return String.valueOf(total/days);
+            }
+            total += prsInt(history_row[i]);
+            day++;
+        }
+        return "0";
     }
 
     // logs parameter string as the action done
@@ -283,21 +316,24 @@ class InventoryMS {
 
 
 
+
     /*
      *  ----------------------------\/---MENUS---\/--------------------------------------
-     */
+    */
 
 
+     
 
 
 
 
     void sign_in_menu() {
+        daily_update();
         Integer 
         name_index = null;
         String 
-        menu_options[] = {"Exit", "Log In", "Sign Up", "Next Day (debug sales)"},
-        menu_input = output_input("SIGN IN", menu_format(menu_options), null), 
+        menu_options[] = {"Exit", "Log In", "Sign Up", "Next Day (for debugging sales)"},
+        menu_input = output_input("SIGN IN", menu_format(menu_options), string_of(sales_history)), 
         name_input, pass_input;
 
         switch (menu_input) {
@@ -342,7 +378,7 @@ class InventoryMS {
 
     void main_menu() {
         String 
-        options[] = {"Log Out", "Reports", "Products", "Users"},
+        options[] = {"Log Out", "Products", "Reports",  "Users"},
         menu_input = output_input("MAIN MENU", menu_format(options), null);
 
         if ( is_int(menu_input) && prsInt(menu_input)-1 > level_logged_in ) {
@@ -352,8 +388,8 @@ class InventoryMS {
         }
         switch(menu_input) {
             case "1": sign_in_menu(); break;
-            case "2": reports_menu(); break;
-            case "3": products_menu(); break;
+            case "2": products_menu(); break;
+            case "3": reports_menu(); break;
             case "4": users_menu(); break;
             default: main_menu();
         }
@@ -617,7 +653,7 @@ class InventoryMS {
 
     void users_menu() {
         String 
-        options[] = {"Back", "Activity Log"},
+        options[] = {"Back", "Activity Log", "User Manager"},
         menu_input = output_input("USERS", menu_format(options), null);
 
         switch (menu_input) {
@@ -629,7 +665,92 @@ class InventoryMS {
     }
 
     void usermanage_menu() {
+        Integer 
+        index = null;
+        String
+        options[] = {"Back", "Create", "Delete", "Edit"},
+        menu_input = output_input("USERS MANAGER", menu_format(options), string_of(accounts)),
+        name_input, pass_input, level_input, id_input;
 
+        switch (menu_input) {
+            case "1": users_menu(); return;
+            case "2":
+                name_input = output_input("CREATE ACCOUNT", "Enter Account Username", string_of(accounts));
+
+                if ( null != index_of(name_input, accounts, 1) ) {
+                    output_input("CREATE ACCOUNT", "Username Already Used", null); 
+                    break;
+                }
+                pass_input = output_input("CREATE ACCOUNT", "Enter Account Password", null);
+                level_input = output_input("CREATE ACCOUNT", "Enter Account Access Level (0-3)", null);
+                
+                if ( !is_int(level_input) || prsInt(level_input) > 3 || prsInt(level_input) < 0 ) {
+                    output_input("CREATE ACCOUNT", "Invalid Access Level", null); 
+                } 
+                else {
+                    insert_into(accounts, new String[]{"gen-id",name_input,pass_input,level_input});
+                    output_input("CREATE ACCOUNT", "New Account Created", null); 
+                }
+            break;
+            case "3":
+                id_input = output_input("DELETE ACCOUNT", "Enter Account ID", string_of(accounts));
+                index = index_of(id_input, accounts, 0);
+
+                if ( null != index ) {
+                    delete_from(accounts, index);
+                    output_input("DELETE ACCOUNT", "Account Deleted", null); 
+                } 
+                else {
+                    output_input("DELETE ACCOUNT", "Account ID Not Found", null); 
+                }
+            break;
+            case "4": editaccount_menu(); return;
+        }
+        usermanage_menu();
+    }
+
+    void editaccount_menu() {
+        Integer 
+        target_index, 
+        target_column;
+        String
+        options[] = {"Back", "Username", "Password", "Access Level"},
+        column_input = output_input("EDIT ACCOUNT", menu_format(options), string_of(accounts)),
+        input_id, new_value = null;
+
+        switch(column_input) {
+            case "1": usermanage_menu(); return;
+            case "2": case "3": case "4": 
+                target_column = prsInt(column_input) - 1;
+            break;
+            default: editaccount_menu(); return;
+        }
+
+        input_id = output_input("EDIT ACCOUNT", "Enter Account ID", string_of(accounts));
+        target_index = index_of(input_id, accounts, 0);
+
+        if ( target_index != null ) {
+            new_value = output_input(
+                "EDIT ACCOUNT", 
+                "Enter New " + accounts[0][target_column], 
+                string_row_of(target_index, accounts)
+            );
+
+            if ( target_column == 3 && !is_int(new_value) ) {
+                output_input("EDIT ACCOUNT", "Invalid Acces Level Input", null);
+            } 
+            else if ( target_column == 1 && null != index_of(new_value, accounts, 1) ) {
+                output_input("EDIT ACCOUNT", "Username Already Used", null);    
+            } 
+            else {
+                accounts[target_index][target_column] = new_value;
+                output_input("EDIT ACCOUNT", "Account Edited", null);
+            }
+        } 
+        else {
+            output_input("EDIT ACCOUNT", "Account ID Not Found", null);
+        }
+        editaccount_menu();
     }
 
     void activity_menu() {
