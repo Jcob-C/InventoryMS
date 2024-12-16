@@ -5,10 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 
 class InventoryMS {
-    final int // CONFIGURATION
-    activity_log_limit = 20;
-    final String
-    signup_users_level = "0";
+    final int activity_log_limit = 20;
 
     final String // CUSTOMIZATION
     TITLE_BORDER = "_______", 
@@ -19,7 +16,7 @@ class InventoryMS {
     String[][] // TABLES (rows start at 1, initialized row is for columm names)
     accounts = {{"ID", "USERNAME", "PASSWORD", "LEVEL"}},
     activity_log = {{"DATE & TIME", "USERNAME", "ACTIVITY"}},
-    // these 3 below are in sync
+    
     products = {{"ID", "NAME", "TYPE", "STOCK"}},
     sales = {{"PRODUCT ID", "NAME", "TODAY", "7 DAYS", "30 DAYS"}},
     sales_history = new String[1][31]; // {PRODUCT ID, DAY 1-30}
@@ -239,7 +236,7 @@ class InventoryMS {
     // checks date and updates date, sales, sales history
     void daily_update() {
         String current_date = get_datetime().format(date_format);
-        int i, ii;
+        int i;
         if ( saved_date == null ) { 
             saved_date = current_date; 
         } 
@@ -366,7 +363,7 @@ class InventoryMS {
                     output_input("SIGN UP", "Username Already Used", null);
                 } 
                 else {    
-                    String[] new_account = {"gen-id", name_input, pass_input, signup_users_level};
+                    String[] new_account = {"gen-id", name_input, pass_input, "0"};
                     insert_into(accounts, new_account);
                     output_input("SIGN UP", "Account Created", null);
                 } 
