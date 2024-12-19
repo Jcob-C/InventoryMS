@@ -1,467 +1,76 @@
-import java.util.Scanner;
-
-// file handling
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-
-// time with timezone
-import java.time.ZonedDateTime; 
-import java.time.ZoneId; 
-import java.time.format.DateTimeFormatter; 
-
-class InventoryMS {
-    final int activity_log_limit = 20;
-
-    final String // CUSTOMIZATION
+class Main {
+    
+    final static String // CUSTOMIZATION
     TITLE_BORDER = "_______", 
     OPTION_GAP = " <- ";
-    final int
-    PRINTS_GAP = 50;
-
-    // file handled variables
-    int 
-    next_user_id = 1,
-    next_product_id = 1;
-    String
-    saved_date = null;
-    String[][] 
-    // TABLES (rows start at 1, initialized row is for columm names)
-    accounts = {{"ID", "USERNAME", "PASSWORD", "LEVEL"}},
-    activity_log = {{"DATE & TIME", "USERNAME", "ACTIVITY"}},
-    products = {{"ID", "NAME", "TYPE", "STOCK"}},
-    sales = {{"PRODUCT ID", "NAME", "TODAY", "7 DAYS", "30 DAYS"}},
-    sales_history = new String[1][31]; // {PRODUCT ID, DAY 1-30}
 
     // sort settings
-    Integer
-    saved_sort_column = 0;
-    boolean
-    saved_ascending = true, saved_num_column = true;
-    // filter settings
-    Integer
-    saved_filter_column = null;
-    String
-    saved_filter_word = null;
+    Integer sort_column = null;
+    boolean 
+    asc = true, 
+    nums = true;
 
-    // cached values
-    int
-    level_logged_in = 0;
-    String
-    username_logged_in = null;
-    
-    final DateTimeFormatter date_format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    final DateTimeFormatter time_format = DateTimeFormatter.ofPattern("HH:mm:ss");
-    final ZoneId phtimeZ = ZoneId.of("Asia/Manila");
-    final Scanner SCANNER = new Scanner(System.in);
+    // filter settings
+    Integer filter_column = null;
+    String filter = null;
+
+    int loggedin_level = 0;
 
     public static void main(String[] args) { 
-        new InventoryMS(); 
+        new Main().sign_in_menu();
     }
 
-    InventoryMS() { 
-        //insert_into(accounts, new String[]{"gen-id","admin","pass","3"});
-        load_alltables();
-        sign_in_menu(); 
-    }
-
-    // copies table into longer with new row
-    void insert_into(String[][] table, String[] row) {
-        if ( row[0].equals("gen-id") ) {
-            if ( accounts == table ) {
-                row[0] = String.valueOf(next_user_id++);
-            } 
-            else if ( products == table ) {
-                row[0] = String.valueOf(next_product_id++);
-                insert_into(sales, new String[]{row[0],row[1],"0","0","0"});
-                insert_into(sales_history, new String[]{row[0]});
-            }
-        } 
-        else if ( activity_log == table && activity_log.length >= activity_log_limit + 1 ) {
-            delete_from(activity_log, 1);
-            insert_into(activity_log, row);
-            return;
-        }
-        String[][] expanded_table = new String[table.length+1][table[0].length];
-        for (int j = 0; j < table.length; j++) {
-            for (int i = 0; i < table[0].length; i++) {
-                expanded_table[j][i] = table[j][i];
-            }
-        }
-        for (int i = 0; i < row.length; i++) {
-            expanded_table[table.length][i] = row[i];
-        }
-        overwrite(table, expanded_table);
-    }
-
-    // copies table into shorter, without the row of index
-    void delete_from(String[][] table, int index) {
-        if ( index < 0 || table.length <= index ) { 
-            return; 
-        }
-        if ( table == products ) {
-            delete_from(sales, index);
-            delete_from(sales_history, index);
-        }
-        String[][] shorter_table = new String[table.length-1][table[0].length];
-        int offset = 0;
-        for (int i = 0; i < shorter_table.length; i++) {
-            if ( i == index ) { 
-                offset = 1; 
-            }
-            shorter_table[i] = table[i+offset];
-        }
-        overwrite(table, shorter_table);
-    }
-
-    // replaces an initialized table
-    void overwrite(String[][] table, String[][] new_table) {
-        if (accounts == table) { accounts = new_table; }
-        else if (products == table) { products = new_table; }
-        else if (sales == table) { sales = new_table; }
-        else if (sales_history == table) { sales_history = new_table; }
-        else if (activity_log == table) { activity_log = new_table; }
-    }
-
-    void save_table(String[][] table, String file_name) {
-        try {
-            FileWriter writer = new FileWriter(file_name+".txt");
-            String string_table = "";
-            for (int i = 1; i < table.length; i++) {
-                for(String value : table[i]) {
-                    if ( value != null ) {
-                        string_table += value + ","; 
-                    }
-                    else {
-                        string_table += "null,";
-                    }
-                }
-                string_table += "\n";
-            }
-            writer.write(string_table);
-            writer.close();
-        } 
-        catch (IOException e) {
-        }
-    }
-    
-    void load_table(String[][] table, String file_name) {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(file_name + ".txt"));
-            String line;
-            String table_id = table[0][2];
-            String[][] target = table;
-            while ((line = reader.readLine()) != null) {
-                String[] row = line.split(","); // Split the line by commas
-                for (int i = 0; i < row.length; i++) {
-                    if (row[i].equals("null")) {
-                        row[i] = null; // Handle 'null' values
-                    }
-                }
-                if (table_id != null && accounts[0][2].equals(table_id)) { target = accounts; }
-                else if (table_id != null && activity_log[0][2].equals(table_id)) { target = activity_log; }
-                else if (table_id != null && products[0][2].equals(table_id)) { target = products; }
-                else if (table_id != null && sales[0][2].equals(table_id)) { target = sales; }
-                else if (table_id == null && sales_history[0][2] == null) { target = sales_history; }
-                insert_into(target, row);
-            }
-            reader.close();
-        } catch (IOException e) {
-        }
-    }
-    
-    void load_alltables() {
-        load_other();
-        load_table(accounts, "accounts");
-        load_table(activity_log, "activity-log");
-        load_table(products, "products");
-        load_table(sales, "sales");
-        load_table(sales_history, "sales-history");
-    }
-
-    void save_alltables() {
-        save_other();
-        save_table(accounts, "accounts");
-        save_table(activity_log, "activity-log");
-        save_table(products, "products");
-        save_table(sales, "sales");
-        save_table(sales_history, "sales-history");
-    }
-    
-    void save_other() {
-        try {
-            FileWriter writer = new FileWriter("other.txt");
-            writer.write(next_user_id+"\n");
-            writer.write(next_product_id+"\n");
-            writer.write(saved_date+"\n");
-            writer.close();
-        } 
-        catch (IOException e) {
-        }
-    }
-
-    void load_other() {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader("other.txt"));
-            next_user_id = Integer.parseInt(reader.readLine());
-            next_product_id = Integer.parseInt(reader.readLine());
-            saved_date = reader.readLine();
-            reader.close();
-        } catch (IOException e) {
-        }
-    }
-
-    // returns the user input after printing the (title, context for user input, additional displayed text)
-    String output_input(String title, String context, String display) {
-        String output = "";
-        for (int i = 1; i <= PRINTS_GAP; i++) {
-            output += "\n";
-        }
-        output += TITLE_BORDER + title + TITLE_BORDER;
-        if ( display != null ) { 
-            output += "\n\n" + display; 
-        }
-        output +=  "\n\n" + context + "\n\n" + "(no_spaces)\nType Here :";
-        System.out.print(output);
-        return SCANNER.next();
-    }
-
-    // if sort column is null, it will not be sorted
-    // returns a copy of the table, sorted or filtered based on the parameters (first row is ignored)
-    String[][] sorted_filtered(String[][] table, Integer sort_column, boolean ascending, boolean num_column, Integer filter_column, String filter_word) {
-        int i, ii, filtered = 0;
-        for(i = 0; i < table.length; i++) {
-            if ( filter_column != null && filter_word != null && table[i][filter_column].equalsIgnoreCase(filter_word) ||
-            filter_column == null && filter_word == null || i == 0 ) {
-                filtered++;
-            }
-        }
-        String[][] table_copy = new String[filtered][table[0].length];
-        for (i = 0; i < table_copy.length; i++) {
-            if ( filter_column != null && filter_word != null && table[i][filter_column].equalsIgnoreCase(filter_word) ||
-            filter_column == null && filter_word == null || i == 0 ) {
-                for (ii = 0; ii < table_copy[i].length; ii++) {
-                    table_copy[i][ii] = table[i][ii];
-                }
-            }
-        }
-        if ( sort_column == null ) { return table_copy; }
-        boolean unsorted = true;
-        String[] holder = null;
-        while (unsorted) {
-            unsorted = false;
-            for (i = 2; i < table_copy.length; i++) {
-                if ( ascending && !num_column && table_copy[i-1][sort_column].compareToIgnoreCase(table_copy[i][sort_column]) > 0 ||
-                !ascending && !num_column && table_copy[i-1][sort_column].compareToIgnoreCase(table_copy[i][sort_column]) < 0 ||
-                ascending && num_column && prsInt(table_copy[i-1][sort_column]) > prsInt(table_copy[i][sort_column]) ||
-                !ascending && num_column && prsInt(table_copy[i-1][sort_column]) < prsInt(table_copy[i][sort_column]) ) {
-                    unsorted = true;
-                    holder = table_copy[i];
-                    table_copy[i] = table_copy[i-1];
-                    table_copy[i-1] = holder;
-                }
-            }
-        }
-        return table_copy;
-    }
-
-    // returns the input table as string styled like a table
-    String string_of(String[][] table) {
-        String output = "";
-        int x, y;
-        for (x = 0; x < table.length; x++) {
-            if ( !output.isEmpty() ) { 
-                output += "\n"; 
-            }
-            if ( x == 1 ) {
-                output += "\n";
-            }
-            for (y = 0;  y < table[x].length; y++) {
-                output += "[" + table[x][y] + "]  ";
-            }
-        } 
-        return output;
-    }
-
-    // string_of() but only for a row
-    String string_of(String[] row) {
-        String output = "";
-        for (int i = 0; i < row.length; i++) {
-            output += "[" + row[i] + "]  ";
-        } 
-        return output;
-    }
-
-    // returns the input array of options as a string styled like a list
-    String menu_format(String[] options) {
-        String formatted_options = "";
-        for (int i = 0; i < options.length; i++) {
-            if ( !formatted_options.isEmpty() ) {
-                formatted_options += "\n";
-            }
-            formatted_options += (i+1) + OPTION_GAP + options[i];
-        }
-        return formatted_options;
-    }
-
-    // returns true if string input can be a number, false if no
-    boolean is_int(String string) {
-        try {
-            prsInt(string);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    // returns the index of row where inputs are found, null if not found (ignores first row)
-    Integer index_of(String target, String[][] table, int column) {
-        for(int i = 1; i < table.length; i++) {
-            if ( table[i][column].equalsIgnoreCase(target) ) {
-                return i;
-            }
-        }
-        return null;
-    }
-
-    // checks date and updates date, sales, sales history
-    void daily_update() {
-        String current_date = get_datetime().format(date_format);
-        int i;
-        if ( saved_date == null ) { 
-            saved_date = current_date; 
-        } 
-        else if( !current_date.equals(saved_date) ) {
-            saved_date = current_date;
-            for (i = 1; i < sales.length; i++) {
-                update_saleshistory(i, sales[i][2]);
-                sales[i][2] = "0";
-                sales[i][3] = get_avg(sales_history[i], 7);
-                sales[i][4] = get_avg(sales_history[i], 30);
-            }
-        }
-    }
-
-    // updates sales history row
-    void update_saleshistory(int row_index, String new_sales) {
-        for (int i = 1; i < 30; i++) {
-            sales_history[row_index][i] = sales_history[row_index][i+1];
-        }
-        sales_history[row_index][30] = new_sales;
-    }
-
-    // get the average of a sales history row, depending on the amount of days
-    String get_avg(String[] history_row, int days) {
-        int
-        total = 0, 
-        day = 0;
-        for (int i = 30; i > 0; i--) {
-            if ( history_row[i] == null ) {
-                break;
-            }
-            else if ( day == days ) {
-                return String.valueOf(total/days);
-            }
-            total += prsInt(history_row[i]);
-            day++;
-        }
-        return "0";
-    }
-
-    // logs parameter string as the action done
-    void log_this(String action) {
-        String[] row = {saved_date+" "+get_datetime().format(time_format), username_logged_in, action};
-        insert_into(activity_log, row);
-    }
-
-    // closes scanner and stops the program
     void exit_program() {
-        save_alltables();
-        SCANNER.close();
+        Dbase.save_all();
         System.exit(0);
     }
 
-    // shortened the string_of() of products applied with the saved sort and filters settings
-    String string_products() {
-        return string_of(sorted_filtered(products, saved_sort_column, saved_ascending, saved_num_column, saved_filter_column, saved_filter_word));
-    }
-
-    // shortened getting string_of() specific row with index, with column names at the top
-    String string_row_of(int index, String[][] table) {
-        return string_of(table[0])+"\n\n"+string_of(table[index]);
-    }
-
-    // shortened Integer.parseInt()
-    Integer prsInt(String string) {
-        return Integer.parseInt(string);
-    }
-
-    // shortened zonedatetime.now
-    ZonedDateTime get_datetime() {
-        return ZonedDateTime.now(phtimeZ);
-    }
-
-
-
-
-
-
-    /*
-     *  ----------------------------\/---MENUS---\/--------------------------------------
-    */
-
-
-     
-
-
-
-
     void sign_in_menu() {
-        daily_update();
+        Dbase.load_all();
+        Dbase.daily_update();
+
         Integer 
         name_index = null;
         String 
         menu_options[] = {"Exit", "Log In", "Sign Up", "Next Day (debug)"},
-        menu_input = output_input("SIGN IN", menu_format(menu_options), null), 
+        menu_input = Utils.outputinput("SIGN IN", Utils.menu_format(menu_options), null), 
         name_input, pass_input;
 
         switch (menu_input) {
             case "1": exit_program(); break;
             case "2":
-                name_input = output_input("LOG IN", "Enter Username", null);
-                pass_input = output_input("LOG IN", "Enter Password", null);
-                name_index = index_of(name_input, accounts, 1);
+                name_input = Utils.outputinput("LOG IN", "Enter Username", null);
+                pass_input = Utils.outputinput("LOG IN", "Enter Password", null);
+                name_index = Utils.index_of(name_input, Dbase.accounts, 1);
 
                 if ( name_index == null ) {
-                    output_input("LOG IN", "Invalid Username", null);
+                    Utils.outputinput("LOG IN", "Invalid Username", null);
                 } 
-                else if ( !accounts[name_index][2].equals(pass_input) ) {
-                    output_input("LOG IN", "Incorrect Password", null);
+                else if ( !Dbase.accounts[name_index][2].equals(pass_input) ) {
+                    Utils.outputinput("LOG IN", "Incorrect Password", null);
                 } 
                 else { 
-                    username_logged_in = name_input;
-                    level_logged_in = prsInt(accounts[name_index][3]);
-                    log_this("Logged In");
+                    loggedin_level = Utils.parse(Dbase.accounts[name_index][3]);
+                    Dbase.log_activity(name_input, "Logged In");
                     main_menu(); 
                     return;   
                 }
             break;
             case "3":
-                name_input = output_input("SIGN UP", "Enter Username", null);
-                pass_input = output_input("SIGN UP", "Enter Password", null);
-                name_index = index_of(name_input, accounts, 1);
+                name_input = Utils.outputinput("SIGN UP", "Enter Username", null);
+                pass_input = Utils.outputinput("SIGN UP", "Enter Password", null);
+                name_index = Utils.index_of(name_input, Dbase.accounts, 1);
 
                 if ( name_index != null ) {
-                    output_input("SIGN UP", "Username Already Used", null);
+                    Utils.outputinput("SIGN UP", "Username Already Used", null);
                 } 
                 else {    
                     String[] new_account = {"gen-id", name_input, pass_input, "0"};
-                    insert_into(accounts, new_account);
-                    output_input("SIGN UP", "Account Created", null);
+                    Dbase.inserted_into(Dbase.accounts, new_account);
+                    Utils.outputinput("SIGN UP", "Account Created", null);
                 } 
             break;
-            case "4": saved_date = "n word";
+            case "4": Dbase.saved_date = "n word";
         }
         sign_in_menu();
     }
