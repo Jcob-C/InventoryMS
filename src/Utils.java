@@ -1,11 +1,15 @@
 import java.util.Scanner;
 
 public class Utils {
+    final static Scanner scnnr = new Scanner(System.in);
+
+
 
     static Integer parse(String string) {
         if (is_int(string)) {
             return Integer.parseInt(string);
-        } else {
+        } 
+        else {
             return null;
         }
     }
@@ -31,12 +35,11 @@ public class Utils {
         days = history.length-1;
 
         for (day = days; day > days-day_range; day--) {
-
             if (history[day] != null && is_int(history[day])) {
-                
                 total += parse(history[day]);
             }
         }
+
         return total;
     }
 
@@ -48,45 +51,39 @@ public class Utils {
         rows = table.length;
 
         for (r = 0; r < rows; r++) {
-
-            if (table[r][column].equals(target)) { 
+            if (table[r][column].equals(target)) {
                 return r;
             }
         }
+
         return null;
     }
 
 
 
     static String outputinput(String title, String input_context, String display) {
-        Scanner scnnr = new Scanner(System.in);
         String output = "";
 
         for (int i = 1; i <= 30; i++) {
             output += "\n";
         }
+
         output += Main.TITLE_BORDER + title + Main.TITLE_BORDER;
 
-        if (display != null) { 
+        if (display != null) {
             output += "\n\n" + display; 
         }
         output +=  "\n\n" + input_context + "\n\n" + "(no_spaces)\nType Here :";
-
         System.out.print(output);
 
-        String input = scnnr.next();
-        scnnr.close();
-
-        return input;
+        return scnnr.next();
     }
 
 
 
     static String menu_format(String[] options) {
         String formatted_options = "";
-
         for (int i = 0; i < options.length; i++) {
-
             if (!formatted_options.isEmpty()) {
                 formatted_options += "\n";
             }
@@ -102,12 +99,11 @@ public class Utils {
             return table;
         }
 
-        boolean unsorted = true;
-
+        boolean 
+        unsorted = true;
         int
         r,
         rows = table.length;
-
         String 
         new_table[][] = copy_of(table),
         holder[] = null;
@@ -150,19 +146,18 @@ public class Utils {
                 frows++;
             }
         }
+
         String[][] new_table = new String[frows][columns];
 
         for (r = 0; r < rows; r++) {
-
             if (r == 0 || table[r][column].contains(filter)) {
-
                 for (c = 0; c < columns; c++) {
-
                     new_table[fr][c] = table[r][c];
                 }
                 fr++;
             }
         }
+
         return new_table;
     }
 
@@ -174,15 +169,28 @@ public class Utils {
         c = 0,
         rows = table.length,
         columns = table[0].length;
-        String[][] copy = new String[rows][columns];
+        String[][] 
+        copy = new String[rows][columns];
 
         for (r = 0; r < rows; r++) {
-
             for (c = 0; c < columns; c++) {
-
                 copy[r][c] = table[r][c];
             }
         }
+        
         return copy;
+    }
+
+    static String string_of(String[][] table) {
+        String output = "";
+        for (String[] x : table) {
+            if (!output.isEmpty()) {
+                output += "\n";
+            }
+            for (String y : x) {
+                output += "[" + y + "]  ";
+            }
+        }
+        return output;
     }
 }
