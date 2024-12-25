@@ -330,7 +330,7 @@ class Main {
     static void users_menu() {
         Integer index, int_type;
         String id,
-        menu_options[] = {"Back", "View Users", "View Activity Log", "Edit Account", "Create Account", "Delete Account"};
+        menu_options[] = {"Back", "View Users", "View Activity Log", "Create Account", "Delete Account"};
         
         switch (Utils.outputinput("USERS MENU", Utils.menu_format(menu_options), null)) {
             case "1": main_menu(); return;
@@ -338,10 +338,6 @@ class Main {
             case "3": viewActLog_menu(); return;
 
             case "4":
-            
-            break;
-
-            case "5":
             String 
             name = Utils.outputinput("CREATE ACCOUNT", "Enter New Account's Username", null),
             pass = Utils.outputinput("CREATE ACCOUNT", "Enter New Account's Password", null),
@@ -365,7 +361,7 @@ class Main {
             }
             break;
 
-            case "6":
+            case "5":
             id = Utils.outputinput("DELETE ACCOUNT", "Enter Account ID", null);
             index = Utils.index_of(id, Dbase.accounts, 0);
 
