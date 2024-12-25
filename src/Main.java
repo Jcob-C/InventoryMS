@@ -60,8 +60,8 @@ class Main {
             else if (!Dbase.accounts[name_index][2].equals(pass_input)) {
                 Utils.outputinput("LOG IN", "Incorrect Password", null);
             } 
-            else if (Dbase.accounts[name_index][3].equals("Pending")) {
-                Utils.outputinput("LOG IN", "Account Is Not Yet Admitted", null);
+            else if (Dbase.accounts[name_index][3].equals("None")) {
+                Utils.outputinput("LOG IN", "Account Is Not Admitted", null);
             } 
             else { 
                 loggedin_type = Dbase.accounts[name_index][3];
@@ -81,7 +81,7 @@ class Main {
                 Utils.outputinput("SIGN UP", "Username Already Used", null);
             } 
             else {    
-                String[] new_account = {"gen-id", name_input, pass_input, "Pending"};
+                String[] new_account = {"gen-id", name_input, pass_input, "None"};
                 Dbase.inserted_into(Dbase.accounts, new_account);
                 Utils.outputinput("SIGN UP", "Account Creation Requested", null);
             } 
@@ -328,7 +328,7 @@ class Main {
     }
 
     static void users_menu() {
-        Integer index;
+        Integer index, int_type;
         String id,
         menu_options[] = {"Back", "View Users", "View Activity Log", "Edit Account", "Create Account", "Delete Account"};
         
@@ -338,15 +338,45 @@ class Main {
             case "3": viewActLog_menu(); return;
 
             case "4":
-                
+            
             break;
 
             case "5":
-            
+            String 
+            name = Utils.outputinput("CREATE ACCOUNT", "Enter New Account's Username", null),
+            pass = Utils.outputinput("CREATE ACCOUNT", "Enter New Account's Password", null),
+            type = Utils.outputinput("CREATE ACCOUNT", Utils.menu_format(Dbase.account_types), null);
+            index = Utils.index_of(name, Dbase.accounts, 1);
+            int_type = Utils.parse(type)-1;
+
+            if (index == null) {
+                if (int_type >= 0 && int_type <= 3) {
+                    Dbase.accounts = Dbase.inserted_into(Dbase.accounts, 
+                        new String[]{String.valueOf(Dbase.next_user_id++),name,pass,Dbase.account_types[int_type]});
+                    Dbase.log_activity(loggedin_name, "Created Product: " + name);
+                    Utils.outputinput("CREATE ACCOUNT", "New Account Created", null); 
+                }
+                else {
+                    Utils.outputinput("CREATE ACCOUNT", "Invalid Account Role", null); 
+                }
+            }
+            else {
+                Utils.outputinput("CREATE ACCOUNT", "Username Already Used", null);
+            }
             break;
 
             case "6":
-            
+            id = Utils.outputinput("DELETE ACCOUNT", "Enter Account ID", null);
+            index = Utils.index_of(id, Dbase.accounts, 0);
+
+            if (index != null) {
+                Utils.outputinput("DELETE ACCOUNT", Dbase.accounts[index][1] + " Deleted", null);
+                Dbase.log_activity(loggedin_name, "Deleted Account: " + Dbase.accounts[index][1]);
+                Dbase.accounts = Dbase.removed_from(Dbase.accounts, index);
+            }
+            else {
+                Utils.outputinput("DELETE ACCOUNT", "Account ID Not Found", null);
+            }
             break;
         }
         users_menu();

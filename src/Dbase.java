@@ -9,7 +9,7 @@ import java.time.ZoneId;
 public class Dbase {
     final static String TXTFILE_SEPARATOR = "/";
     final static int ACTIVITY_LOG_LIMIT = 50;
-    static final String[] account_types = {"Pending", "Clerk", "Manager", "Admin"};
+    static final String[] account_types = {"None", "Clerk", "Manager", "Admin"};
 
     final static ZoneId phtZone = ZoneId.of("Asia/Manila");
     final static DateTimeFormatter date_f = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -24,7 +24,7 @@ public class Dbase {
 
     // tables' row indexes start at 1 (row 0 is for column names)
     static String[][] 
-    accounts = {{"ID", "USERNAME", "PASSWORD", "TYPE"}},
+    accounts = {{"ID", "USERNAME", "PASSWORD", "ROLE"}},
     activity_log = {{"DATE & TIME", "USERNAME", "ACTIVITY"}},
     products = {{"ID", "NAME", "TYPE", "STOCK"}},
     sales = {{"PRODUCT ID", "NAME", "TODAY", "7 DAYS", "30 DAYS"}},
